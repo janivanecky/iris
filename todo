@@ -5,11 +5,15 @@ TODO
 - projection matrices
 - view matrices
 - render cube mesh
+- diffuse lightning
+- mouse input
+- camera movement
 
 =========================
 DONE
 =========================
 11/03/18
+- IBO for quad
 - simple vertex shader
 - simple pixel shader
 - quad mesh

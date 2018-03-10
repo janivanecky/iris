@@ -38,10 +38,12 @@ var quad_vertices = [...]Vec4 {
 	{-0.5, -0.5, 0.5, 1.0},
 	{-0.5, 0.5, 0.5, 1.0},
 	{0.5, 0.5, 0.5, 1.0},
-
-	{-0.5, -0.5, 0.5, 1.0},
-	{0.5, 0.5, 0.5, 1.0},
 	{0.5, -0.5, 0.5, 1.0},
+}
+
+var quad_indices = [...]uint32 {
+	0, 1, 2,
+	0, 2, 3,
 }
 
 func main() {
@@ -148,6 +150,11 @@ func main() {
 		var position_size_in_bytes int32 = 4 * position_size
 		gl.VertexAttribPointer(0, position_size, gl.FLOAT, false, position_size_in_bytes, gl.PtrOffset(0));
 		gl.EnableVertexAttribArray(0);  
+		
+		var quad_ebo uint32
+		gl.GenBuffers(1, &quad_ebo)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, quad_ebo);
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(quad_indices) * 4, gl.Ptr(&quad_indices[0]), gl.STATIC_DRAW);
 	}
 		
 	gl.Disable(gl.DEPTH_TEST)
@@ -168,8 +175,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.BindVertexArray(quad_vao)
-		gl.DrawArrays(gl.TRIANGLES, 0, 6)//int32(len(quad_vertices)))
-
+		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, gl.PtrOffset(0))
 		// Do OpenGL stuff.
 		window.SwapBuffers()
 	}

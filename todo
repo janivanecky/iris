@@ -2,16 +2,19 @@
 TODO
 =========================
 - cube mesh
-- projection matrices
-- view matrices
 - render cube mesh
 - diffuse lightning
 - mouse input
 - camera movement
+- snake->camelCase
 
 =========================
 DONE
 =========================
+12/03/18
+- projection matrices
+- view matrices
+
 11/03/18
 - IBO for quad
 - simple vertex shader

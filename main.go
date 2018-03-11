@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math"
+	gmath "./lib/math"
 	"strings"
 	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -11,9 +13,12 @@ const simple_vertex_shader_text = `
 #version 330 core
 in vec4 in_position;
 
+uniform mat4 projection_matrix;
+uniform mat4 view_matrix;
+
 void main()
 {
-	gl_Position = in_position;
+	gl_Position = projection_matrix * view_matrix * in_position;
 }
 `
 
@@ -27,18 +32,11 @@ void main()
 }
 `
 
-type Vec4 struct {
-	x float32
-	y float32
-	z float32
-	w float32
-}
-
-var quad_vertices = [...]Vec4 {
-	{-0.5, -0.5, 0.5, 1.0},
-	{-0.5, 0.5, 0.5, 1.0},
-	{0.5, 0.5, 0.5, 1.0},
-	{0.5, -0.5, 0.5, 1.0},
+var quad_vertices = [...]gmath.Vec4 {
+	{-0.5, -0.5, -0.5, 1.0},
+	{-0.5, 0.5, -0.5, 1.0},
+	{0.5, 0.5, -0.5, 1.0},
+	{0.5, -0.5, -0.5, 1.0},
 }
 
 var quad_indices = [...]uint32 {
@@ -135,6 +133,14 @@ func main() {
 		gl.DeleteShader(pixel_shader)
 
 		gl.UseProgram(program)
+
+		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0 * math.Pi / 180.0, 1920.0 / 1080.0, 0.01, 10.0)
+		projectionMatrixUniform := gl.GetUniformLocation(program, gl.Str("projection_matrix\x00"))
+		gl.UniformMatrix4fv(projectionMatrixUniform, 1, false, &projectionMatrix[0][0])
+
+		viewMatrix := gmath.GetTranslation(0.0, 0.0, -5.0)
+		viewMatrixUniform := gl.GetUniformLocation(program, gl.Str("view_matrix\x00"))
+		gl.UniformMatrix4fv(viewMatrixUniform, 1, false, &viewMatrix[0][0])
 	}
 
 	var quad_vao uint32
@@ -145,7 +151,7 @@ func main() {
 		var quad_vbo uint32
 		gl.GenBuffers(1, &quad_vbo)
 		gl.BindBuffer(gl.ARRAY_BUFFER, quad_vbo)
-		gl.BufferData(gl.ARRAY_BUFFER, len(quad_vertices) * 4 * 4, gl.Ptr(&quad_vertices[0].x), gl.STATIC_DRAW)
+		gl.BufferData(gl.ARRAY_BUFFER, len(quad_vertices) * 4 * 4, gl.Ptr(&quad_vertices[0][0]), gl.STATIC_DRAW)
 		var position_size int32 = 4
 		var position_size_in_bytes int32 = 4 * position_size
 		gl.VertexAttribPointer(0, position_size, gl.FLOAT, false, position_size_in_bytes, gl.PtrOffset(0));
@@ -156,7 +162,7 @@ func main() {
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, quad_ebo);
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(quad_indices) * 4, gl.Ptr(&quad_indices[0]), gl.STATIC_DRAW);
 	}
-		
+
 	gl.Disable(gl.DEPTH_TEST)
 
 	// Start our fancy-shmancy loop

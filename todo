@@ -1,19 +1,21 @@
 =========================
 TODO
 =========================
-- cube mesh
-- render cube mesh
-- diffuse lightning
-- mouse input
-- camera movement
-- snake->camelCase
+- clean up
 
 =========================
 DONE
 =========================
 12/03/18
+- snake->camelCase
+- cube normals
+- diffuse lightning
+- mouse input
 - projection matrices
 - view matrices
+- camera movement
+- cube mesh
+- render cube mesh
 
 11/03/18
 - IBO for quad

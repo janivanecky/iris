@@ -32,7 +32,7 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 	}
 	
 	// Set up useful settings
-	glfw.SwapInterval(1)
+	glfw.SwapInterval(0)
 	gl.Enable(gl.DEPTH_TEST)
 
 	return window
@@ -91,7 +91,7 @@ func GetProgram(shaders ...Shader) (Program, error) {
 		gl.AttachShader(program, uint32(shader))
 	}
 	gl.LinkProgram(program)
-	// print linking errors if any
+	
 	var programLinkingStatus int32
 	gl.GetProgramiv(program, gl.LINK_STATUS, &programLinkingStatus)
 	if programLinkingStatus == gl.FALSE {

@@ -1,11 +1,25 @@
 =========================
 TODO
 =========================
-- clean up
+- get freetype package
+- get some fancy font
+- font vertex shader
+- font pixel shader
+- font package (copy from C++ lib)
+- render quad
+- render textured quad
+- render quad with full font texture
+- simple text rendering function
+- fancy text rendering function (position, pivot, colors)
+- simple rect rendering function
+- fancy rect rendering function (position, colors, size)
 
 =========================
 DONE
 =========================
+13/03/18
+- clean up
+
 12/03/18
 - snake->camelCase
 - cube normals
@@ -49,4 +63,4 @@ Milestones
 - Fancy shaders
 
 *4*
-- First version of the app - having an option of changing colors/models
+- First version of the app - having an option of changing colors/smodels

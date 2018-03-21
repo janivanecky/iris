@@ -1,22 +1,47 @@
 =========================
 TODO
 =========================
-- get freetype package
-- get some fancy font
-- font vertex shader
-- font pixel shader
-- font package (copy from C++ lib)
-- render quad
-- render textured quad
-- render quad with full font texture
-- simple text rendering function
-- fancy text rendering function (position, pivot, colors)
-- simple rect rendering function
-- fancy rect rendering function (position, colors, size)
+- UI slider
+- ditch my math lib?
+- should Font contain ints or floats?
+- reset state (blend/depth) after text draw
+- vectors union?
+- overall cleanup
 
 =========================
 DONE
 =========================
+21/03/18
+- UI rendering through panels
+
+20/03/18
+- UI rendering through end
+
+18/03/18
+- cleanup text rendering
+- fancy rect rendering function (position, colors, size)
+- simple rect rendering function
+- fancy text rendering function (position, pivot, colors)
+- simple text rendering function
+- simple text rendering loop (static quad and just a single character)
+
+
+16/03/18
+- render quad correctly (with 0 position being top of the screen)
+
+15/03/18
+- render quad correctly (-0.5-0.5 -> 0-1)
+- render quad with full font texture
+- render quad
+- render textured quad
+- font vertex shader
+- font pixel shader
+
+14/03/18
+- get some fancy font
+- get freetype package
+- font package (copy from C++ lib)
+
 13/03/18
 - clean up
 

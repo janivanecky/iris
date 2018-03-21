@@ -1,7 +1,7 @@
 package graphics
 
 import (
-	"github.com/go-gl/gl/v4.6-core/gl"
+	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"strings"
 	"fmt"
@@ -16,6 +16,12 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 		panic(err)
 	}
 
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+
 	// Create our new fancy window
 	window, err := glfw.CreateWindow(width, height, title, nil, nil)
 	if err != nil {
@@ -24,6 +30,7 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 
 	// God knows why this is necessary
 	window.MakeContextCurrent()	
+	glfw.SwapInterval(0)
 
 	// Create an OpenGL context
 	err = gl.Init()
@@ -32,7 +39,6 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 	}
 	
 	// Set up useful settings
-	glfw.SwapInterval(0)
 	gl.Enable(gl.DEPTH_TEST)
 
 	return window
@@ -64,7 +70,7 @@ var shaderTypeToGL = map[ShaderType]uint32 {
 }
 
 func GetShader(shaderSource string, shaderType ShaderType) (Shader, error) {
-	shaderSourceString, freeShaderSourceString := gl.Strs(shaderSource)
+	shaderSourceString, freeShaderSourceString := gl.Strs(shaderSource + "\x00")
 	shader := gl.CreateShader(shaderTypeToGL[shaderType]);
 	gl.ShaderSource(shader, 1, shaderSourceString, nil);
 	freeShaderSourceString()
@@ -130,7 +136,12 @@ func SetUniformVec3(uniform Uniform, v gmath.Vec3) {
 	
 }
 
-func GetMesh(vertices []float32, indices []uint32) Mesh {
+func SetUniformVec4(uniform Uniform, v gmath.Vec4) {
+	gl.Uniform4fv(int32(uniform), 1, &v[0])
+	
+}
+
+func GetMesh(vertices []float32, indices []uint32, vertexAttribs []int) Mesh {
 	var cubeVao uint32
 	gl.GenVertexArrays(1, &cubeVao)
 	gl.BindVertexArray(cubeVao)
@@ -139,10 +150,19 @@ func GetMesh(vertices []float32, indices []uint32) Mesh {
 	gl.GenBuffers(1, &cubeVbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, cubeVbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices) * 4, gl.Ptr(&vertices[0]), gl.STATIC_DRAW)
-	gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 4 * 8, gl.PtrOffset(0));
-	gl.EnableVertexAttribArray(0);  
-	gl.VertexAttribPointer(1, 4, gl.FLOAT, false, 4 * 8, gl.PtrOffset(16));
-	gl.EnableVertexAttribArray(1);  
+	
+	var stride int32 = 0
+	for _, vertexAttrib := range vertexAttribs {
+		stride += int32(vertexAttrib * 4)
+	}
+
+	offset := 0
+	for i, vertexAttrib := range vertexAttribs {
+		index := uint32(i)
+		gl.VertexAttribPointer(index, int32(vertexAttrib), gl.FLOAT, false, stride, gl.PtrOffset(offset));
+		gl.EnableVertexAttribArray(index);  
+		offset += vertexAttrib * 4
+	}
 	
 	var cubeIbo uint32
 	gl.GenBuffers(1, &cubeIbo)

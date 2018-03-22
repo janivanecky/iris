@@ -8,6 +8,15 @@ var mouseX, mouseY float64 = -1.0, -1.0
 var dmouseX, dmouseY float64 = 0.0, 0.0
 var mouseButtonDown bool = false
 var mouseButtonPressed bool = false
+var mouseWheelDelta float64 = 0.0
+
+func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
+	mouseWheelDelta = yoff
+}
+
+func Init(window *glfw.Window) {
+	window.SetScrollCallback(scrollCallback)
+}
 
 func Update(window *glfw.Window) {
 	mouseButtonPressed = false
@@ -44,4 +53,10 @@ func IsMouseLeftButtonPressed() bool {
 
 func IsMouseLeftButtonDown() bool {
 	return mouseButtonDown
+}
+
+func GetMouseWheelDelta() float64 {
+	result := mouseWheelDelta
+	mouseWheelDelta = 0.0
+	return result
 }

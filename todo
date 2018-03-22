@@ -1,16 +1,22 @@
 =========================
 TODO
 =========================
-- UI slider
 - ditch my math lib?
 - should Font contain ints or floats?
 - reset state (blend/depth) after text draw
 - vectors union?
+- vector operations (add, sub, mul)
+- implicit initialization instead of {0,0}
 - overall cleanup
 
 =========================
 DONE
 =========================
+22/03/18
+- input switch between UI and not UI
+- UI slider
+- why smaller text not working?
+
 21/03/18
 - UI rendering through panels
 

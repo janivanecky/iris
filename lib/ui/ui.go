@@ -42,16 +42,28 @@ var rectModelMatrixUniform graphics.Uniform
 var quad graphics.Mesh
 var uiFont font.Font
 
-var colorForeground gmath.Vec4 = gmath.Vec4{0,1,0,1}
-var colorBackground gmath.Vec4 = gmath.Vec4{0,0,1,1}
-var colorLabel gmath.Vec4 = gmath.Vec4{1,0,0,1}
+var colorForeground gmath.Vec4 = gmath.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}
+var colorBackground gmath.Vec4 = gmath.Vec4{0.1,0.1,0.1,1}
+var colorLabel gmath.Vec4 = gmath.Vec4{1,1,1,1}
+
+/*
+#define COLOR(r,g,b,a) Vector4((r) / 255.0f, (g) / 255.0f, (b) / 255.0f, (a) / 255.0f)
+// This means that the color has been NOT gamma corrected - it was seen displayed incorrectly.
+#define COLOR_LINEAR(r,g,b,a) Vector4(math::pow((r) / 255.0f, 2.2f), math::pow((g) / 255.0f, 2.2f), math::pow((b) / 255.0f, 2.2f), math::pow((a) / 255.0f, 2.2f))
+static Vector4 color_foreground = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
+static Vector4 color_title = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
+*/
 
 var isInputResponsive bool = true
 
+func SetInputResponsive(responsive bool) {
+    isInputResponsive = responsive
+}
 
 type textRenderingData struct {
     text string
     position gmath.Vec2
+    origin gmath.Vec2
     color gmath.Vec4
 }
 
@@ -67,6 +79,10 @@ func (rectList rectRenderingDataList)Less(i, j int) bool {
     return rectList[i].layer < rectList[j].layer
 }
 
+func GetTex() []uint8 {
+    return uiFont.Texture
+}
+
 var textRenderingBuffer []textRenderingData
 var rectRenderingBuffer []rectRenderingData
 
@@ -74,7 +90,13 @@ func Init() {
 	truetypeBytes, err := ioutil.ReadFile("font.ttf")
 	if err != nil {
 		panic(err)
-	}
+    }
+    colorForeground = gmath.Vec4{
+        float32(math.Pow(28.0 / 255.0, 2.2)), 
+        float32(math.Pow(224.0 / 255.0, 2.2)),
+        float32(math.Pow(180.0 / 255.0, 2.2)),
+        1,
+    }
 
 	uiFont = font.GetFont(truetypeBytes, 20.0)
 	
@@ -150,15 +172,15 @@ func DrawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	
 	width, height := font.GetStringWidth(text), font.RowHeight
-	x := float64(position[0]) - width * float64(origin[0])
-	y := float64(position[1]) + float64(font.TopPad) - float64(height) * float64(origin[1])
+	x := math.Floor(float64(position[0]) - width * float64(origin[0]))
+	y := math.Floor(float64(position[1]) + float64(font.TopPad) - float64(height) * float64(origin[1]))
 	for _, char := range text {
 		glyphA := font.Glyphs[char]
 		relX := float32(glyphA.X) / 256.0
 		relY := 1.0 - float32(glyphA.Y + glyphA.BitmapHeight) / 256.0
 		relWidth := float32(glyphA.BitmapWidth) / 256.0
 		relHeight := float32(glyphA.BitmapHeight) / 256.0
-		sourceRect := gmath.Vec4{relX,relY,relWidth,relHeight}
+        sourceRect := gmath.Vec4{relX,relY,relWidth,relHeight}
 		graphics.SetUniformVec4(sourceRectUniform, sourceRect)
 		graphics.SetUniformVec4(textColorUniform, color)
 
@@ -167,7 +189,7 @@ func DrawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec
 		modelMatrix := gmath.Matmul(
 			gmath.GetTranslation(currentX, 1080 - currentY, 0),
 			gmath.Matmul(
-				gmath.GetScale(float64(glyphA.BitmapWidth), float64(glyphA.BitmapHeight), 1.0),
+                gmath.GetScale(float64(glyphA.BitmapWidth), float64(glyphA.BitmapHeight), 1.0),
 				gmath.GetTranslation(0.5, -0.5, 0.0),
 			),
 		)
@@ -272,7 +294,7 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
 	innerPadding := float32(10.0)
 	textPos := gmath.Vec2{bgBoxPos[0] + innerPadding + bgBoxSize[0], bgBoxPos[1]}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        label, textPos, colorLabel,
+        label, textPos, gmath.Vec2{0,0}, colorLabel,
     })
     textWidth := uiFont.GetStringWidth(label)
 	
@@ -281,6 +303,103 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
     panel.maxWidth = math.Max(panel.maxWidth, float64(textPos[0]) + textWidth)
 	return newValue, changed
 }
+
+func (panel *Panel) AddSlider(label string, value float64, min float64, max float64) (newValue float64, changed bool) {
+    changed = false
+    newValue = value
+    sliderID := hashString(label)
+    itemPos := gmath.Vec2{panel.position[0] + panel.itemPos[0], panel.position[1] + panel.itemPos[1]}
+    
+    height := float32(uiFont.RowHeight)
+    sliderWidth := float32(200.0)
+
+    // Slider bar
+    sliderStart := float32(0.0)
+
+    sliderBarColor := gmath.Vec4{colorBackground[0] * 2.0, colorBackground[1] * 2.0, colorBackground[2] * 2.0, 1.0}
+    sliderBarPos := gmath.Vec2{itemPos[0] + sliderStart, itemPos[1]}
+    sliderBarSize := gmath.Vec2{sliderWidth, height}
+    rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
+        sliderBarPos, sliderBarSize, sliderBarColor, 1,
+    })
+    
+    sliderColor := colorForeground
+    sliderSize := gmath.Vec2{height, height}
+    sliderX := float32((value - min) / (max - min)) * (sliderWidth - sliderSize[0]) + sliderBarPos[0] + sliderSize[0] * 0.5
+    sliderPos := gmath.Vec2{sliderX - sliderSize[0] * 0.5, itemPos[1]}
+
+    // Number
+    currentPos := gmath.Vec2{sliderBarPos[0] + sliderBarSize[0] / 2.0, itemPos[1]}
+    numberString := fmt.Sprintf("%.02f", value)
+    textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
+        numberString, currentPos, gmath.Vec2{0.5, 0}, colorLabel,
+    })
+
+    // Check for mouse input
+    if isInputResponsive {
+        mouseX, mouseY := input.GetMousePosition()
+        mousePosition := gmath.Vec2{float32(mouseX), float32(mouseY)}
+        if isInRect(mousePosition, sliderPos, sliderSize) {       
+            setHot(sliderID)
+        } else if !isActive(sliderID) {
+            unsetHot(sliderID)
+        }
+
+        overallSliderSize := gmath.Vec2{sliderBarSize[0], sliderSize[1]}
+        overallSliderPos := gmath.Vec2{sliderPos[0], sliderPos[1]}
+        if (isHot(sliderID) || isInRect(mousePosition, overallSliderPos, overallSliderSize)) && !isActive(sliderID) && input.IsMouseLeftButtonPressed() {
+            setActive(sliderID)
+        } else if isActive(sliderID) && !input.IsMouseLeftButtonDown() {
+            unsetActive(sliderID)
+        }
+    } else {
+        unsetHot(sliderID)
+        unsetActive(sliderID)
+    }
+
+    if isHot(sliderID) {
+        sliderColor = gmath.Vec4{
+            sliderColor[0] * 0.8,
+            sliderColor[1] * 0.8,
+            sliderColor[2] * 0.8,
+            1.0,
+        }
+    }
+
+    if isActive(sliderID) {
+        mouseX, _ := input.GetMousePosition()
+        mouseXRel := (float32(mouseX) - sliderBarPos[0] - sliderSize[0] * 0.5) / (sliderBarSize[0] - sliderSize[0]);
+        
+        // TODO: Clamp!!
+        if mouseXRel < 0.0 {
+            mouseXRel = 0.0
+        }
+        if mouseXRel > 1.0 {
+            mouseXRel = 1.0
+        }
+        
+        newValue = float64(mouseXRel) * (max - min) + min
+        changed = true
+    }
+
+    // Slider
+    rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
+        sliderPos, sliderSize, sliderColor, 1,
+    })
+
+    // Slider label
+    textPos := gmath.Vec2{sliderBarSize[0] + sliderBarPos[0] + innerPadding, itemPos[1]}
+    textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
+        label, textPos, gmath.Vec2{0.0, 0}, colorLabel,
+    })
+    textWidth := uiFont.GetStringWidth(label)
+
+    panel.itemPos[1] += height + innerPadding
+    
+    panel.maxWidth = math.Max(panel.maxWidth, float64(textPos[0]) + textWidth)
+    return newValue, changed
+}
+
 
 type Panel struct {
     position gmath.Vec2
@@ -302,7 +421,7 @@ func StartPanel(name string, position gmath.Vec2) Panel {
 func (panel *Panel) End() {
     titlePos := gmath.Vec2{panel.position[0] + horizontalPadding, innerPadding}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        panel.name, titlePos, colorBackground,
+        panel.name, titlePos, gmath.Vec2{0,0}, colorBackground,
     })
     titleWidth := uiFont.GetStringWidth(panel.name)
     panel.maxWidth = math.Max(panel.maxWidth, float64(titlePos[1]) + titleWidth)
@@ -331,7 +450,7 @@ func Present() {
     rectRenderingBuffer = rectRenderingBuffer[:0]
 
     for _, textData := range textRenderingBuffer {
-        DrawText(textData.text, &uiFont, textData.position, textData.color, gmath.Vec2{0,0})
+        DrawText(textData.text, &uiFont, textData.position, textData.color, textData.origin)
     }
 
     textRenderingBuffer = textRenderingBuffer[:0]
@@ -367,18 +486,19 @@ func isHot(itemID int) bool {
 	return itemID == hotID
 }
 
-var isRegisteringInput bool = false
+var IsRegisteringInput bool = false
+
 func setActive(itemID int) {
     if activeID == -1 {
         activeID = itemID
-        isRegisteringInput = true;
+        IsRegisteringInput = true;
     }
 }
 
 func unsetActive(itemID int) {
     if activeID == itemID {
         activeID = -1
-        isRegisteringInput = false
+        IsRegisteringInput = false
     }
 }
 
@@ -394,178 +514,3 @@ func hashString(text string) int {
 
     return hashValue + 1;
 }
-
-/*const float vertical_padding = 15.0f;
-const float horizontal_padding = 15.0f;
-const float inner_padding = 10.0f;
-static int32_t active_id = -1;
-static int32_t hot_id = -1;
-
-
-#define COLOR(r,g,b,a) Vector4((r) / 255.0f, (g) / 255.0f, (b) / 255.0f, (a) / 255.0f)
-// This means that the color has been NOT gamma corrected - it was seen displayed incorrectly.
-#define COLOR_LINEAR(r,g,b,a) Vector4(math::pow((r) / 255.0f, 2.2f), math::pow((g) / 255.0f, 2.2f), math::pow((b) / 255.0f, 2.2f), math::pow((a) / 255.0f, 2.2f))
-static Vector4 color_background = Vector4(0.1f, 0.1f, 0.1f, 1.0f);
-//static Vector4 color_foreground = Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-static Vector4 color_foreground = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-static Vector4 color_title = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-static Vector4 color_label = Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-
-Panel ui::start_panel(char *name, Vector2 pos, float width)
-{
-    Panel panel = {};
-
-    panel.pos = pos;
-    panel.width = width;
-    panel.item_pos.x = horizontal_padding;
-    panel.item_pos.y = font::get_row_height(&font_ui) + vertical_padding * 2.0f;
-    panel.name = name;
-    
-    return panel;
-}
-
-Panel ui::start_panel(char *name, float x, float y, float width)
-{
-    return ui::start_panel(name, Vector2(x,y), width);
-}
-
-void ui::end_panel(Panel *panel)
-{
-    float panel_height = panel->item_pos.y + vertical_padding - inner_padding;
-    RectItem panel_bg = {color_background, panel->pos, Vector2(panel->width, panel_height)};
-    array::add(&rect_items_bg, panel_bg);
-
-    float title_bar_height = font::get_row_height(&font_ui) + inner_padding * 2;
-    RectItem title_bar = {color_foreground, panel->pos, Vector2(panel->width, title_bar_height)};
-    array::add(&rect_items_bg, title_bar);
-
-    Vector2 title_pos = panel->pos + Vector2(horizontal_padding, inner_padding);
-    TextItem title = {};
-    title.color = color_background;
-    title.pos = title_pos;
-    memcpy(title.text, panel->name, strlen(panel->name) + 1);
-    array::add(&text_items, title);
-}
-
-bool ui::add_slider(Panel *panel, char *label, float *pos, float min, float max)
-{
-    bool changed = false;
-    int32_t slider_id = hash_string(label);
-    Vector2 item_pos = panel->pos + panel->item_pos;
-    float height = font::get_row_height(&font_ui);
-    float slider_width = 200.0f;
-
-    // Slider bar
-    float slider_start = 0.0f;
-
-    Vector4 slider_bar_color = color_background * 2.0f;
-    Vector2 slider_bar_pos = item_pos + Vector2(slider_start, 0.0f);
-    Vector2 slider_bar_size = Vector2(slider_width, height);
-    RectItem slider_bar = { slider_bar_color, slider_bar_pos, slider_bar_size };
-    array::add(&rect_items, slider_bar);
-
-    Vector4 slider_color = color_foreground;
-    Vector2 slider_size = Vector2(height, height);
-    float slider_x = (*pos - min) / (max - min) * (slider_width - slider_size.x) + slider_bar_pos.x + slider_size.x * 0.5f;
-    Vector2 slider_pos = Vector2(slider_x - slider_size.x * 0.5f, item_pos.y);
-
-    // Max number
-    Vector2 current_pos = Vector2(slider_bar_pos.x + slider_bar_size.x / 2.0f, item_pos.y);
-    TextItem current_label = {};
-    current_label.color = color_label;
-    current_label.pos = current_pos; 
-    current_label.origin = Vector2(0.5f, 0.0f);
-    sprintf_s(current_label.text, ARRAYSIZE(current_label.text), "%.2f", *pos);
-    array::add(&text_items, current_label);
-
-    // Check for mouse input
-    if(ui::is_input_responsive())
-    {
-        Vector2 mouse_position = input::mouse_position();
-        if(is_in_rect(mouse_position, slider_pos, slider_size))
-        {       
-            set_hot(slider_id);
-        }
-        else if(!is_active(slider_id))
-        {
-            unset_hot(slider_id);
-        }
-
-        Vector2 overall_slider_size = Vector2(slider_bar_size.x, slider_size.y);
-        Vector2 overall_slider_pos = Vector2(slider_bar_pos.x, slider_pos.y);
-
-        if((is_hot(slider_id) || is_in_rect(mouse_position, overall_slider_pos, overall_slider_size)) && !is_active(slider_id) && input::mouse_left_button_down())
-        {
-            set_active(slider_id);
-        }
-        else if (is_active(slider_id) && !input::mouse_left_button_down())
-        {
-            unset_active(slider_id);
-        }
-    }
-    else 
-    {
-        unset_hot(slider_id);
-        unset_active(slider_id);
-    }
-
-    if (is_hot(slider_id))
-    {
-        slider_color *= 0.8f;
-        slider_color.w = 1.0f;
-    }
-
-    if(is_active(slider_id))
-    {
-        float mouse_x = input::mouse_position().x;
-        float mouse_x_rel = (mouse_x - slider_bar_pos.x - slider_size.x * 0.5f) / (slider_bar_size.x - slider_size.x);
-        mouse_x_rel = math::clamp(mouse_x_rel, 0.0f, 1.0f);
-        
-        *pos = mouse_x_rel * (max - min) + min;
-
-        changed = true;
-    }
-
-    // Slider
-    RectItem slider = { slider_color, slider_pos, slider_size };
-    array::add(&rect_items, slider);
-
-    // Slider label
-    Vector2 text_pos = Vector2(slider_bar_size.x + slider_bar_pos.x + inner_padding, item_pos.y);
-    TextItem slider_label = {};
-    slider_label.color = color_label;
-    slider_label.pos = text_pos;
-    memcpy(slider_label.text, label, strlen(label) + 1);
-    array::add(&text_items, slider_label);
-
-    panel->item_pos.y += height + inner_padding;
-    return changed;
-}
-
-void ui::set_input_responsive(bool is_responsive)
-{
-    is_input_rensposive_ = is_responsive;
-}
-
-bool ui::is_input_responsive()
-{
-    return is_input_rensposive_;
-}
-
-bool ui::is_registering_input()
-{
-    return is_registering_input_;
-}
-
-float ui::get_screen_width()
-{
-    return screen_width;
-}
-
-Font *ui::get_font()
-{
-    return &font_ui;
-}
-
-
-*/

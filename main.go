@@ -9,7 +9,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 
 	"./lib/graphics"
-	"./lib/font"
+	_ "./lib/font"
 	"./lib/ui"
 	"./lib/input"
 	gmath "./lib/math"
@@ -38,15 +38,9 @@ func main() {
 	window := graphics.GetWindow(1920, 1080, "New fancy window")
 	defer graphics.ReleaseWindow()
 
+	input.Init(window)
+
 	ui.Init()
-
-	truetypeBytes, err := ioutil.ReadFile("font.ttf")
-	if err != nil {
-		panic(err)
-	}
-
-	font := font.GetFont(truetypeBytes, 20.0)
-
 	var texture uint32
 	gl.GenTextures(1, &texture)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
@@ -54,9 +48,11 @@ func main() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, 256, 256, 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(font.Texture))
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, 256, 256, 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(ui.GetTex()))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
+
+	
 	var viewMatrixUniform graphics.Uniform
 	var projectionMatrixMeshUniform graphics.Uniform
 	var program_mesh graphics.Program
@@ -83,7 +79,7 @@ func main() {
 		graphics.ReleaseShaders(vertexShader, pixelShader)
 		graphics.SetProgram(program_mesh)
 
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 10.0)
+		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 1000.0)
 		projectionMatrixMeshUniform = graphics.GetUniform(program_mesh, "projection_matrix")
 		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
 
@@ -104,6 +100,7 @@ func main() {
 	radius := 5.0
 
 	toggle := true
+	val := 0.5
 
 	start := time.Now()
 	// Start our fancy-shmancy loop
@@ -133,28 +130,44 @@ func main() {
 
 		graphics.SetProgram(program_mesh)
 
-		if input.IsMouseLeftButtonDown() {
-			azimuth -= dx / 100.0
-			polar -= dy / 100.0
-
-			camPosition := vecFromPolarCoords(azimuth, polar, radius)
-			viewMatrix = gmath.GetLookAt(camPosition, gmath.Vec3{0, 0, 0}, gmath.Vec3{0, 1, 0})
+		camChanged := false
+		uiResponsive := true
+		if !ui.IsRegisteringInput {
+			if input.IsMouseLeftButtonDown() {
+				azimuth -= dx / 100.0
+				polar -= dy / 100.0
+				camChanged = true
+				uiResponsive = false
+			}
+	
+			mouseWheelDelta := input.GetMouseWheelDelta()
+			if mouseWheelDelta != 0.0 {
+				radius -= mouseWheelDelta / 2.0
+				camChanged = true
+			}
+	
+			if camChanged {
+				camPosition := vecFromPolarCoords(azimuth, polar, radius)
+				viewMatrix = gmath.GetLookAt(camPosition, gmath.Vec3{0, 0, 0}, gmath.Vec3{0, 1, 0})
+			}
 		}
 		graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
 
 		// Draw scene.
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 10.0)
+		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 100.0)
 		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
 		graphics.DrawMesh(cube)
 
-		ui.DrawText("ASDASDASD", &font, gmath.Vec2{960, 0}, gmath.Vec4{0, 1, 0, 1}, gmath.Vec2{0.5,0})
-		ui.DrawRect(gmath.Vec2{960, 0}, gmath.Vec2{100,100}, gmath.Vec4{1, 1, 0, 0.2})
-
 		panel := ui.StartPanel("Test panel", gmath.Vec2{0,0})
 		toggle, _ = panel.AddToggle("test", toggle)
+		val, _ = panel.AddSlider("test2", val, 0, 1)
 		panel.End()
 
 		ui.Present()
+
+		if !ui.IsRegisteringInput {
+			ui.SetInputResponsive(uiResponsive)
+		}
 
 		// Swappity-swap.
 		window.SwapBuffers()

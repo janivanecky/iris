@@ -4,6 +4,8 @@ import (
 	"github.com/golang/freetype/truetype"
 	"image"
 	"golang.org/x/image/math/fixed"
+	"golang.org/x/image/font"
+	"fmt"
 )
 
 
@@ -31,13 +33,13 @@ func GetFont(bytes []uint8, size float64) Font {
 		panic(err)
 	}
 
-	face := truetype.NewFace(ttfData, &truetype.Options{Size: size})
+	face := truetype.NewFace(ttfData, &truetype.Options{Size: size, Hinting: font.HintingFull})
 	ascent := face.Metrics().Ascent.Round()
 	descent := -face.Metrics().Descent.Round()
 	var font Font
-	font.RowHeight = face.Metrics().Height.Round()
+	font.RowHeight = (ascent - descent)//face.Metrics().Height.Ceil()
 	font.TopPad = font.RowHeight - (ascent - descent)
-
+	fmt.Println(face.Metrics())
 	font.Glyphs = make(map[rune]Glyph)
 	font.Texture = make([]uint8, 256*256)
 	x, y := 0, 0
@@ -72,6 +74,7 @@ func GetFont(bytes []uint8, size float64) Font {
 		}
 
 		x += bitmapWidth
+		fmt.Println(bitmapWidth)
 	}
 
 	if 256%2 == 1 {

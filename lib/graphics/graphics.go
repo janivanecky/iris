@@ -40,6 +40,7 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 	
 	// Set up useful settings
 	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.FRAMEBUFFER_SRGB)
 
 	return window
 }

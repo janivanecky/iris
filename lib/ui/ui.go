@@ -46,14 +46,6 @@ var colorForeground gmath.Vec4 = gmath.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 2
 var colorBackground gmath.Vec4 = gmath.Vec4{0.1,0.1,0.1,1}
 var colorLabel gmath.Vec4 = gmath.Vec4{1,1,1,1}
 
-/*
-#define COLOR(r,g,b,a) Vector4((r) / 255.0f, (g) / 255.0f, (b) / 255.0f, (a) / 255.0f)
-// This means that the color has been NOT gamma corrected - it was seen displayed incorrectly.
-#define COLOR_LINEAR(r,g,b,a) Vector4(math::pow((r) / 255.0f, 2.2f), math::pow((g) / 255.0f, 2.2f), math::pow((b) / 255.0f, 2.2f), math::pow((a) / 255.0f, 2.2f))
-static Vector4 color_foreground = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-static Vector4 color_title = COLOR_LINEAR(28, 224, 180, 255);//Vector4(1.0f, 1.0f, 1.0f, 0.6f);
-*/
-
 var isInputResponsive bool = true
 
 func SetInputResponsive(responsive bool) {
@@ -87,7 +79,7 @@ var textRenderingBuffer []textRenderingData
 var rectRenderingBuffer []rectRenderingData
 
 func Init() {
-	truetypeBytes, err := ioutil.ReadFile("font.ttf")
+	truetypeBytes, err := ioutil.ReadFile("averia_serif_italic.ttf")
 	if err != nil {
 		panic(err)
     }

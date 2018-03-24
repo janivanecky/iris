@@ -6,6 +6,8 @@ import (
 	"strings"
 	"fmt"
 	gmath "../math"
+
+	"syscall"
 )
 
 // Create window with OpenGL context.
@@ -15,6 +17,17 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 	if err != nil {
 		panic(err)
 	}
+	
+	dll, err := syscall.LoadDLL("User32.dll")
+	if err != nil {
+		panic(err)
+	}
+	dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
+	dpi, errCode, _ := dpiForSystem.Call()
+	if errCode > 0 {
+		panic(errCode)
+	}
+	scale := float64(dpi) / 96.0
 
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
@@ -24,7 +37,8 @@ func GetWindow(width int, height int, title string) *glfw.Window  {
 	glfw.WindowHint(glfw.Samples, 4);
 
 	// Create our new fancy window
-	window, err := glfw.CreateWindow(width, height, title, nil, nil)
+	scaledWidth, scaledHeight := int(scale * float64(width)), int(scale * float64(height))
+	window, err := glfw.CreateWindow(scaledWidth, scaledHeight, title, nil, nil)
 	if err != nil {
 		panic(err)
 	}

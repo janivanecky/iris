@@ -35,9 +35,9 @@ func vecFromPolarCoords(azimuth float64, polar float64, radius float64) gmath.Ve
 
 
 func main() {
-	window := graphics.GetWindow(1920, 1080, "New fancy window")
+	window := graphics.GetWindow(800, 600, "New fancy window")
 	defer graphics.ReleaseWindow()
-
+	//return
 	input.Init(window)
 
 	ui.Init()
@@ -48,7 +48,7 @@ func main() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, 256, 256, 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(ui.GetTex()))
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, 512, 512, 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(ui.GetTex()))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
 
@@ -79,7 +79,7 @@ func main() {
 		graphics.ReleaseShaders(vertexShader, pixelShader)
 		graphics.SetProgram(program_mesh)
 
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 1000.0)
+		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 800.0/600.0, 0.01, 1000.0)
 		projectionMatrixMeshUniform = graphics.GetUniform(program_mesh, "projection_matrix")
 		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
 
@@ -154,7 +154,7 @@ func main() {
 		graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
 
 		// Draw scene.
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 1920.0/1080.0, 0.01, 100.0)
+		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, 800.0 / 600.0, 0.01, 100.0)
 		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
 		graphics.DrawMesh(cube)
 

@@ -5,7 +5,6 @@ import (
 	"image"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/image/font"
-	"fmt"
 )
 
 
@@ -37,11 +36,11 @@ func GetFont(bytes []uint8, size float64) Font {
 	ascent := face.Metrics().Ascent.Round()
 	descent := -face.Metrics().Descent.Round()
 	var font Font
-	font.RowHeight = (ascent - descent)//face.Metrics().Height.Ceil()
+	font.RowHeight = face.Metrics().Height.Ceil()
 	font.TopPad = font.RowHeight - (ascent - descent)
-	fmt.Println(face.Metrics())
 	font.Glyphs = make(map[rune]Glyph)
-	font.Texture = make([]uint8, 256*256)
+	texSize := 512
+	font.Texture = make([]uint8, texSize*texSize)
 	x, y := 0, 0
 	for c := 32; c < 128; c++ {
 		dr, img, imgOffset, advanceFixed, ok := face.Glyph(fixed.Point26_6{0, 0}, rune(c))
@@ -58,7 +57,7 @@ func GetFont(bytes []uint8, size float64) Font {
 		
 		bitmapWidth, bitmapHeight := dr.Max.X-dr.Min.X, dr.Max.Y-dr.Min.Y
 		
-		if x+bitmapWidth > 256 {
+		if x+bitmapWidth > texSize {
 			x = 0
 			y += font.RowHeight
 		}
@@ -69,23 +68,22 @@ func GetFont(bytes []uint8, size float64) Font {
 
 		for yLoc := 0; yLoc < bitmapHeight; yLoc++ {
 			sourcePixelsPos := bitmapX + (bitmapY+yLoc)*bitmapStride
-			targetPixelsPos := x + (y+yLoc)*256
+			targetPixelsPos := x + (y+yLoc)*texSize
 			copy(font.Texture[targetPixelsPos:targetPixelsPos+bitmapWidth], pixels[sourcePixelsPos:sourcePixelsPos+bitmapWidth])
 		}
 
 		x += bitmapWidth
-		fmt.Println(bitmapWidth)
 	}
 
-	if 256%2 == 1 {
+	if texSize%2 == 1 {
 		panic("ERROR")
 	}
 
-	for source_row, target_row := 0, 255; source_row < 256/2; source_row, target_row = source_row+1, target_row-1 {
-		temp_pixels := make([]uint8, 256)
-		copy(temp_pixels, font.Texture[source_row*256:(source_row+1)*256])
-		copy(font.Texture[source_row*256:(source_row+1)*256], font.Texture[target_row*256:(target_row+1)*256])
-		copy(font.Texture[target_row*256:(target_row+1)*256], temp_pixels)
+	for source_row, target_row := 0, texSize - 1; source_row < texSize/2; source_row, target_row = source_row+1, target_row-1 {
+		temp_pixels := make([]uint8, texSize)
+		copy(temp_pixels, font.Texture[source_row*texSize:(source_row+1)*texSize])
+		copy(font.Texture[source_row*texSize:(source_row+1)*texSize], font.Texture[target_row*texSize:(target_row+1)*texSize])
+		copy(font.Texture[target_row*texSize:(target_row+1)*texSize], temp_pixels)
 	}
 
 	return font

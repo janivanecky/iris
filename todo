@@ -2,16 +2,24 @@
 TODO
 =========================
 - ditch my math lib?
-- should Font contain ints or floats?
 - reset state (blend/depth) after text draw
 - vectors union?
 - vector operations (add, sub, mul)
 - implicit initialization instead of {0,0}
 - overall cleanup
+- nice way of dealing with scaling
+- propagate window size information to ui etc. (projection matrices)
 
 =========================
 DONE
 =========================
+24/03/18
+- font blurry when scaling
+
+
+23/03/18
+- GLFW DPI awereness
+
 22/03/18
 - input switch between UI and not UI
 - UI slider

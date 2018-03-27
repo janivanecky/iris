@@ -15,7 +15,6 @@ import (
 	gmath "./lib/math"
 
 	"runtime"
-	"syscall"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
@@ -52,31 +51,17 @@ var quad graphics.Mesh
 var uiFont font.Font
 
 func main() {
-	window := graphics.GetWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "New fancy window")
-	defer graphics.ReleaseWindow()
-	//return
-	platform.Init(window)
+	window := platform.GetWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "New fancy window")
+	defer platform.ReleaseWindow()
+	graphics.Init()
 
-	dll, err := syscall.LoadDLL("User32.dll")
-	if err != nil {
-		panic(err)
-	}
-	dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
-	dpi, errCode, _ := dpiForSystem.Call()
-	if errCode > 0 {
-		panic(errCode)
-	}
-
-	scale := float64(dpi) / 96.0
-    
 	truetypeBytes, err := ioutil.ReadFile("fonts/font.ttf")
 	if err != nil {
 		panic(err)
     }
-    
 
+	scale := platform.GetWindowScaling()
     uiFont = font.GetFont(truetypeBytes, 20.0, scale)
-    
 	
 	ui.Init(WINDOW_WIDTH, WINDOW_HEIGHT, uiFont)
 	

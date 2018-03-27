@@ -2,9 +2,9 @@ package font
 
 import (
 	"github.com/golang/freetype/truetype"
-	"image"
 	"golang.org/x/image/math/fixed"
 	"golang.org/x/image/font"
+	"image"
 )
 
 

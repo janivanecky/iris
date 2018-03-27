@@ -5,7 +5,6 @@ TODO
 - reset state (blend/depth) after text draw
 - cleanup
     - clean main.go
-    - platform.go (input + GLFW)
     - application code module
 - checkerboard texture
 - PBR shader
@@ -17,6 +16,7 @@ TODO
 DONE
 =========================
 27/03/18
+- platform.go (input + GLFW)
 - make UI module graphics independent
 
 26/03/18

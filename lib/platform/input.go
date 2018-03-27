@@ -2,7 +2,6 @@ package platform
 
 import (
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"syscall"
 )
 
 var mouseX, mouseY float64 = -1.0, -1.0
@@ -15,20 +14,8 @@ func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
 	mouseWheelDelta = yoff
 }
 
-var scale float64 = 1.0
-func Init(window *glfw.Window) {
+func initInput(window *glfw.Window) {
 	window.SetScrollCallback(scrollCallback)
-
-	dll, err := syscall.LoadDLL("User32.dll")
-	if err != nil {
-		panic(err)
-	}
-	dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
-	dpi, errCode, _ := dpiForSystem.Call()
-	if errCode > 0 {
-		panic(errCode)
-	}
-	scale = float64(dpi) / 96.0
 }
 
 func Update(window *glfw.Window) {
@@ -36,7 +23,7 @@ func Update(window *glfw.Window) {
 
 	// Update mouse position and get position delta.
 	x, y := window.GetCursorPos()
-	x, y = x / scale, y / scale
+	x, y = x / windowScale, y / windowScale
 	if mouseX > 0.0 && mouseY > 0.0 {
 		dmouseX, dmouseY = x - mouseX, y - mouseY
 	}

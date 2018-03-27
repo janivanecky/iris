@@ -1,12 +1,12 @@
 package ui
 
 import (
-	gmath "../math"
-	"../platform"
     "fmt"
     "sort"
     "math"
     "../font"
+	gmath "../math"
+	"../platform"
 )
 
 var colorForeground gmath.Vec4 = gmath.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}

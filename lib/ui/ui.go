@@ -1,47 +1,13 @@
 package ui
 
 import (
-	"../graphics"
 	gmath "../math"
-	"../font"
 	"../input"
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"io/ioutil"
     "fmt"
     "sort"
     "math"
-    "syscall"
+    "../font"
 )
-
-var quadVertices = [...]float32{
-	-0.5, -0.5, 0.0, 1.0,
-	0.0, 0.0,
-	-0.5, 0.5, 0.0, 1.0,
-	0.0, 1.0,
-	0.5, 0.5, 0.0, 1.0,
-	1.0, 1.0,
-	0.5, -0.5, 0.0, 1.0,
-	1.0, 0.0,
-}
-
-var quadIndices = [...]uint32{
-	0, 1, 2,
-	0, 2, 3,
-}
-
-var program_text graphics.Program
-var textModelMatrixUniform graphics.Uniform
-var projectionMatrixTextUniform graphics.Uniform
-var sourceRectUniform graphics.Uniform
-var textColorUniform graphics.Uniform
-
-var program_rect graphics.Program
-var projectionMatrixRectUniform graphics.Uniform
-var rectColorUniform graphics.Uniform
-var rectModelMatrixUniform graphics.Uniform
-
-var quad graphics.Mesh
-var uiFont font.Font
 
 var colorForeground gmath.Vec4 = gmath.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}
 var colorBackground gmath.Vec4 = gmath.Vec4{0.1,0.1,0.1,1}
@@ -54,195 +20,54 @@ func SetInputResponsive(responsive bool) {
 }
 
 type textRenderingData struct {
-    text string
-    position gmath.Vec2
-    origin gmath.Vec2
-    color gmath.Vec4
+    Text string
+    Position gmath.Vec2
+    Origin gmath.Vec2
+    Color gmath.Vec4
 }
 
 type rectRenderingData struct {
-    position gmath.Vec2
-    size gmath.Vec2
-    color gmath.Vec4
-    layer int
+    Position gmath.Vec2
+    Size gmath.Vec2
+    Color gmath.Vec4
+    Layer int
 }
 
 type rectRenderingDataList []rectRenderingData
 func (rectList rectRenderingDataList)Less(i, j int) bool {
-    return rectList[i].layer < rectList[j].layer
-}
-
-func GetTex() []uint8 {
-    return uiFont.Texture
+    return rectList[i].Layer < rectList[j].Layer
 }
 
 var textRenderingBuffer []textRenderingData
 var rectRenderingBuffer []rectRenderingData
 
-var scale float64 = 1.0
-var rowHeight int = 0
+var screenHeight float64 = 0
 
-func Init() {
-    dll, err := syscall.LoadDLL("User32.dll")
-	if err != nil {
-		panic(err)
-	}
-	dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
-	dpi, errCode, _ := dpiForSystem.Call()
-	if errCode > 0 {
-		panic(errCode)
-	}
-	scale = float64(dpi) / 96.0
-    
-	truetypeBytes, err := ioutil.ReadFile("averia_serif_italic.ttf")
-	if err != nil {
-		panic(err)
-    }
+var uiFont font.Font
+
+func Init(windowWidth int, windowHeight int, font font.Font) {
+    textRenderingBuffer = make([]textRenderingData, 100)
+    rectRenderingBuffer = make([]rectRenderingData, 100)
+    uiFont = font
+
     colorForeground = gmath.Vec4{
         float32(math.Pow(28.0 / 255.0, 2.2)), 
         float32(math.Pow(224.0 / 255.0, 2.2)),
         float32(math.Pow(180.0 / 255.0, 2.2)),
         1,
     }
-
-    uiFont = font.GetFont(truetypeBytes, 20.0 * scale)
-    rowHeight = int(float64(uiFont.RowHeight) / scale)
-	
-	// Text rendering shaders
-	vertexShaderData, err := ioutil.ReadFile("shaders/text_vertex_shader.glsl")
-	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err := ioutil.ReadFile("shaders/text_pixel_shader.glsl")
-	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_text, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_text)
-
-
-	projectionMatrix := gmath.GetOrthographicProjectionGLRH(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0)
-	projectionMatrixTextUniform = graphics.GetUniform(program_text, "projection_matrix")
-	graphics.SetUniformMatrix(projectionMatrixTextUniform, projectionMatrix)
-
-	sourceRectUniform = graphics.GetUniform(program_text, "source_rect")
-	textModelMatrixUniform = graphics.GetUniform(program_text, "model_matrix")
-	textColorUniform = graphics.GetUniform(program_text, "color")
-
-	// Rect rendering shaders
-	vertexShaderData, err = ioutil.ReadFile("shaders/rect_vertex_shader.glsl")
-	vertexShader, err = graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err = ioutil.ReadFile("shaders/rect_pixel_shader.glsl")
-	pixelShader, err = graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_rect, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_rect)
-
-	projectionMatrixRectUniform = graphics.GetUniform(program_rect, "projection_matrix")
-	rectColorUniform = graphics.GetUniform(program_rect, "color")
-	rectModelMatrixUniform = graphics.GetUniform(program_rect, "model_matrix")
-	
-    quad = graphics.GetMesh(quadVertices[:], quadIndices[:], []int{4, 2})
-    
-    textRenderingBuffer = make([]textRenderingData, 100)
-    rectRenderingBuffer = make([]rectRenderingData, 100)
+	screenHeight = float64(windowHeight)
 }
 
-
-func DrawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec4, origin gmath.Vec2) {
-
-	graphics.SetProgram(program_text)
-	projectionMatrix := gmath.GetOrthographicProjectionGLRH(0.0, 800.0, 0.0, 600.0, 10.0, -10.0)
-	graphics.SetUniformMatrix(projectionMatrixTextUniform, projectionMatrix)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	
-	width, height := font.GetStringWidth(text) / scale, font.RowHeight
-	x := math.Floor(float64(position[0]) - width * float64(origin[0]))
-	y := math.Floor(float64(position[1]) + float64(font.TopPad) / scale - float64(height) * float64(origin[1]))
-    texWidth := float32(512.0)
-	for _, char := range text {
-        glyphA := font.Glyphs[char]
-		relX := float32(glyphA.X) / texWidth
-		relY := 1.0 - float32(glyphA.Y + glyphA.BitmapHeight) / texWidth
-		relWidth := float32(glyphA.BitmapWidth) / texWidth
-		relHeight := float32(glyphA.BitmapHeight) / texWidth
-        sourceRect := gmath.Vec4{relX,relY,relWidth,relHeight}
-		graphics.SetUniformVec4(sourceRectUniform, sourceRect)
-		graphics.SetUniformVec4(textColorUniform, color)
-
-		currentX := x + float64(glyphA.XOffset) / scale
-		currentY := y + float64(glyphA.YOffset) / scale
-		modelMatrix := gmath.Matmul(
-			gmath.GetTranslation(currentX, 600 - currentY, 0),
-			gmath.Matmul(
-                gmath.GetScale(float64(glyphA.BitmapWidth) / scale, float64(glyphA.BitmapHeight) / scale, 1.0),
-				gmath.GetTranslation(0.5, -0.5, 0.0),
-			),
-		)
-		graphics.SetUniformMatrix(textModelMatrixUniform, modelMatrix)			
-		
-		graphics.DrawMesh(quad)
-		
-		x += float64(glyphA.Advance) / scale
-	}
-}
-
-func DrawRect(pos gmath.Vec2, size gmath.Vec2, color gmath.Vec4) {
-	graphics.SetProgram(program_rect)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	projectionMatrix := gmath.GetOrthographicProjectionGLRH(0.0, 800.0, 0.0, 600, 10.0, -10.0)
-	graphics.SetUniformMatrix(projectionMatrixRectUniform, projectionMatrix)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	
-	graphics.SetUniformVec4(rectColorUniform, color)
-	
-	x, y := pos[0], 600 - pos[1]
-	modelMatrix := gmath.Matmul(
-		gmath.GetTranslation(float64(x), float64(y), 0),
-		gmath.Matmul(
-			gmath.GetScale(float64(size[0]), float64(size[1]), 1.0),
-			gmath.GetTranslation(0.5, -0.5, 0.0),
-		),
-	)
-	graphics.SetUniformMatrix(rectModelMatrixUniform, modelMatrix)
-		
-	graphics.DrawMesh(quad)
-}
 
 func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed bool) {
 	changed = false
 	newValue = active
 
     boxMiddleToTotal := 0.6
-    height := float64(rowHeight)
+    height := float64(uiFont.RowHeight)
     
-	itemPos := gmath.Vec2{panel.position[0] + panel.itemPos[0], panel.position[1] + panel.itemPos[1]}
+    itemPos := panel.position.Add(panel.itemPos)
 	toggleID := hashString(label)
 
     bgBoxSize := gmath.Vec2{float32(height), float32(height)}
@@ -289,10 +114,9 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
     // Active part of toggle box
     if !active {
         fgBoxSize := gmath.Vec2{float32(height * boxMiddleToTotal), float32(height *  boxMiddleToTotal)}
-        fgBoxPos := gmath.Vec2{
-			bgBoxPos[0] + (bgBoxSize[0] - fgBoxSize[0]) / 2.0,
-			bgBoxPos[1] + (bgBoxSize[1] - fgBoxSize[1]) / 2.0,
-		}
+        fgBoxPos := bgBoxPos.Add(
+            bgBoxSize.Sub(fgBoxSize).Mul(0.5),
+        )
 		
         rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
             fgBoxPos, fgBoxSize, middleColor, 1,
@@ -303,9 +127,9 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
 	innerPadding := float32(10.0)
 	textPos := gmath.Vec2{bgBoxPos[0] + innerPadding + bgBoxSize[0], bgBoxPos[1]}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        label, textPos, gmath.Vec2{0,0}, colorLabel,
+        label, textPos, gmath.Vec2{}, colorLabel,
     })
-    textWidth := uiFont.GetStringWidth(label) / scale
+    textWidth := uiFont.GetStringWidth(label)
 	
     // Move current panel item position
     panel.itemPos[1] += float32(height) + innerPadding
@@ -317,15 +141,17 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     changed = false
     newValue = value
     sliderID := hashString(label)
-    itemPos := gmath.Vec2{panel.position[0] + panel.itemPos[0], panel.position[1] + panel.itemPos[1]}
+    itemPos := panel.position.Add(panel.itemPos)
     
-    height := float32(rowHeight)
+    height := float32(uiFont.RowHeight)
     sliderWidth := float32(200.0)
 
     // Slider bar
     sliderStart := float32(0.0)
 
     sliderBarColor := gmath.Vec4{colorBackground[0] * 2.0, colorBackground[1] * 2.0, colorBackground[2] * 2.0, 1.0}
+    //sliderBarColor := colorBackground.Mul(2.0)
+    //sliderBarColor[3] = 1.0
     sliderBarPos := gmath.Vec2{itemPos[0] + sliderStart, itemPos[1]}
     sliderBarSize := gmath.Vec2{sliderWidth, height}
     rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
@@ -355,7 +181,7 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
         }
 
         overallSliderSize := gmath.Vec2{sliderBarSize[0], sliderSize[1]}
-        overallSliderPos := gmath.Vec2{sliderPos[0], sliderPos[1]}
+        overallSliderPos := sliderBarPos
         if (isHot(sliderID) || isInRect(mousePosition, overallSliderPos, overallSliderSize)) && !isActive(sliderID) && input.IsMouseLeftButtonPressed() {
             setActive(sliderID)
         } else if isActive(sliderID) && !input.IsMouseLeftButtonDown() {
@@ -399,9 +225,9 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     // Slider label
     textPos := gmath.Vec2{sliderBarSize[0] + sliderBarPos[0] + innerPadding, itemPos[1]}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        label, textPos, gmath.Vec2{0.0, 0}, colorLabel,
+        label, textPos, gmath.Vec2{}, colorLabel,
     })
-    textWidth := uiFont.GetStringWidth(label) / scale
+    textWidth := uiFont.GetStringWidth(label)
 
     panel.itemPos[1] += height + innerPadding
     
@@ -423,16 +249,16 @@ func StartPanel(name string, position gmath.Vec2) Panel {
     panel.name = name
     panel.maxWidth = float64(horizontalPadding)
     panel.itemPos[0] = horizontalPadding
-    panel.itemPos[1] = float32(rowHeight) + verticalPadding * 2.0
+    panel.itemPos[1] = float32(uiFont.RowHeight) + verticalPadding * 2.0
     return panel
 }
 
 func (panel *Panel) End() {
     titlePos := gmath.Vec2{panel.position[0] + horizontalPadding, innerPadding}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        panel.name, titlePos, gmath.Vec2{0,0}, colorBackground,
+        panel.name, titlePos, gmath.Vec2{}, colorBackground,
     })
-    titleWidth := uiFont.GetStringWidth(panel.name) / scale
+    titleWidth := uiFont.GetStringWidth(panel.name)
     panel.maxWidth = math.Max(panel.maxWidth, float64(titlePos[1]) + titleWidth)
 
     panelHeight := panel.itemPos[1] + verticalPadding - innerPadding
@@ -441,27 +267,22 @@ func (panel *Panel) End() {
         panel.position, gmath.Vec2{panelWidth, panelHeight}, colorBackground, 0,
     })
 
-    titleBarHeight := float32(rowHeight) + innerPadding * 2.0
+    titleBarHeight := float32(uiFont.RowHeight) + innerPadding * 2.0
     rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
         panel.position, gmath.Vec2{panelWidth, titleBarHeight}, colorForeground, 0,
     })
 }
 
-func Present() {
+func GetDrawData() ([]rectRenderingData, []textRenderingData){
     sort.Slice(rectRenderingBuffer, func(i, j int) bool {
-        return rectRenderingBuffer[i].layer < rectRenderingBuffer[j].layer
+        return rectRenderingBuffer[i].Layer < rectRenderingBuffer[j].Layer
       })
 
-    for _, rectData := range rectRenderingBuffer {
-        DrawRect(rectData.position, rectData.size, rectData.color)
-    }
+    return rectRenderingBuffer, textRenderingBuffer
+}
 
+func Clear() {
     rectRenderingBuffer = rectRenderingBuffer[:0]
-
-    for _, textData := range textRenderingBuffer {
-        DrawText(textData.text, &uiFont, textData.position, textData.color, textData.origin)
-    }
-
     textRenderingBuffer = textRenderingBuffer[:0]
 }
 
@@ -523,3 +344,4 @@ func hashString(text string) int {
 
     return hashValue + 1;
 }
+

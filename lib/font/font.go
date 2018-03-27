@@ -11,9 +11,10 @@ import (
 type Font struct {
 	Texture []uint8
 	Glyphs map[rune]Glyph
-	RowHeight int
-	TopPad int
-	_font truetype.Font
+	RowHeight float64
+	TopPad float64
+	font truetype.Font
+	scale float64
 }
 
 type Glyph struct {
@@ -21,24 +22,27 @@ type Glyph struct {
 	Y            int
 	BitmapWidth  int
 	BitmapHeight int
-	XOffset      int
-	YOffset      int
-	Advance      int
+	XOffset      float64
+	YOffset      float64
+	Width        float64
+	Height   	 float64
+	Advance      float64
 }
 
-func GetFont(bytes []uint8, size float64) Font {
+func GetFont(bytes []uint8, size float64, scale float64) Font {
 	ttfData, err := truetype.Parse(bytes)
 	if err != nil {
 		panic(err)
 	}
 
-	face := truetype.NewFace(ttfData, &truetype.Options{Size: size, Hinting: font.HintingFull})
+	face := truetype.NewFace(ttfData, &truetype.Options{Size: size, Hinting: font.HintingFull, DPI: 72 * scale})
 	ascent := face.Metrics().Ascent.Round()
 	descent := -face.Metrics().Descent.Round()
 	var font Font
-	font.RowHeight = face.Metrics().Height.Ceil()
-	font.TopPad = font.RowHeight - (ascent - descent)
+	//rowHeight := face.Metrics().Height.Ceil()
+	rowHeight := ascent - descent
 	font.Glyphs = make(map[rune]Glyph)
+	font.scale = scale
 	texSize := 512
 	font.Texture = make([]uint8, texSize*texSize)
 	x, y := 0, 0
@@ -59,10 +63,16 @@ func GetFont(bytes []uint8, size float64) Font {
 		
 		if x+bitmapWidth > texSize {
 			x = 0
-			y += font.RowHeight
+			y += rowHeight
 		}
 
-		font.Glyphs[rune(c)] = Glyph{x, y, bitmapWidth, bitmapHeight, xOffset, yOffset, advance}
+		font.Glyphs[rune(c)] = Glyph{
+			x, y,
+			bitmapWidth, bitmapHeight,
+			float64(xOffset) / scale, float64(yOffset) / scale,
+			float64(bitmapWidth) / scale, float64(bitmapHeight) / scale,
+			float64(advance) / scale,
+		}
 
 		bitmapX, bitmapY := imgOffset.X, imgOffset.Y
 
@@ -72,7 +82,7 @@ func GetFont(bytes []uint8, size float64) Font {
 			copy(font.Texture[targetPixelsPos:targetPixelsPos+bitmapWidth], pixels[sourcePixelsPos:sourcePixelsPos+bitmapWidth])
 		}
 
-		x += bitmapWidth
+		x += bitmapWidth + 1
 	}
 
 	if texSize%2 == 1 {
@@ -85,6 +95,9 @@ func GetFont(bytes []uint8, size float64) Font {
 		copy(font.Texture[source_row*texSize:(source_row+1)*texSize], font.Texture[target_row*texSize:(target_row+1)*texSize])
 		copy(font.Texture[target_row*texSize:(target_row+1)*texSize], temp_pixels)
 	}
+
+	font.TopPad = float64(rowHeight - (ascent - descent)) / scale
+	font.RowHeight = float64(rowHeight) / scale
 
 	return font
 }
@@ -106,6 +119,6 @@ func (font *Font)GetStringWidth(text string) float64 {
 }
 
 func (font *Font) GetKerning(c1 rune, c2 rune) float64 {
-	i1, i2 := font._font.Index(c1), font._font.Index(c2)
-	return float64(font._font.Kern(fixed.Int26_6(0), i1, i2).Round())
+	i1, i2 := font.font.Index(c1), font.font.Index(c2)
+	return float64(font.font.Kern(fixed.Int26_6(0), i1, i2).Round()) / font.scale
 }

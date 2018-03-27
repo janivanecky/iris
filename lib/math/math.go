@@ -91,12 +91,40 @@ func length(v Vec3) float32 {
 	return float32(result)
 }
 
-func (v Vec3) muls(s float32) Vec3 {
+func (v Vec4) Mul(s float32) Vec4 {
+	return Vec4{v[0] * s, v[1] * s, v[2] * s, v[3] * s}
+}
+
+func (v0 Vec4) Sub(v1 Vec4) Vec4 {
+	return Vec4{v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2], v0[3] - v1[3]}
+}
+
+func (v0 Vec4) Add(v1 Vec4) Vec4 {
+	return Vec4{v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2], v0[3] + v1[3]}
+}
+
+func (v Vec3) Mul(s float32) Vec3 {
 	return Vec3{v[0] * s, v[1] * s, v[2] * s}
 }
 
-func (v0 Vec3) sub(v1 Vec3) Vec3 {
+func (v0 Vec3) Sub(v1 Vec3) Vec3 {
 	return Vec3{v0[0] - v1[0], v0[1] - v1[1], v0[2] - v1[2]}
+}
+
+func (v0 Vec3) Add(v1 Vec3) Vec3 {
+	return Vec3{v0[0] + v1[0], v0[1] + v1[1], v0[2] + v1[2]}
+}
+
+func (v Vec2) Mul(s float32) Vec2 {
+	return Vec2{v[0] * s, v[1] * s}
+}
+
+func (v0 Vec2) Sub(v1 Vec2) Vec2 {
+	return Vec2{v0[0] - v1[0], v0[1] - v1[1]}
+}
+
+func (v0 Vec2) Add(v1 Vec2) Vec2 {
+	return Vec2{v0[0] + v1[0], v0[1] + v1[1]}
 }
 
 func normalize(v Vec3) Vec3 {
@@ -104,7 +132,7 @@ func normalize(v Vec3) Vec3 {
 	if length < 0.001 {
 		return Vec3{}
 	}
-	return v.muls(1.0 / length)
+	return v.Mul(1.0 / length)
 }
 
 func cross(a Vec3, b Vec3) Vec3 {
@@ -123,7 +151,7 @@ func dot(a Vec3, b Vec3) float32 {
 func GetLookAt(eye Vec3, target Vec3, up Vec3) Matrix4x4 {
 	var x, y, z Vec3
 
-	z = eye.sub(target)
+	z = eye.Sub(target)
 	z = normalize(z)
 
 	x = cross(up, z)

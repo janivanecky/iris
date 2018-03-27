@@ -6,7 +6,7 @@ TODO
 - cleanup
     - clean main.go
     - platform.go (input + GLFW)
-    - nice way of dealing with scaling
+    - application code module
 - checkerboard texture
 - PBR shader
 - comment and clean font.go

@@ -11,7 +11,7 @@ import (
 	"./lib/graphics"
 	"./lib/font"
 	"./lib/ui"
-	"./lib/input"
+	"./lib/platform"
 	gmath "./lib/math"
 
 	"runtime"
@@ -55,7 +55,7 @@ func main() {
 	window := graphics.GetWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "New fancy window")
 	defer graphics.ReleaseWindow()
 	//return
-	input.Init(window)
+	platform.Init(window)
 
 	dll, err := syscall.LoadDLL("User32.dll")
 	if err != nil {
@@ -75,7 +75,7 @@ func main() {
     }
     
 
-    uiFont = font.GetFont(truetypeBytes, 40.0, scale)
+    uiFont = font.GetFont(truetypeBytes, 20.0, scale)
     
 	
 	ui.Init(WINDOW_WIDTH, WINDOW_HEIGHT, uiFont)
@@ -137,16 +137,8 @@ func main() {
     
     quad = graphics.GetMesh(quadVertices[:], quadIndices[:], []int{4, 2})
 
-	var texture uint32
-	// TODO: graphics create Texture function
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, 512, 512, 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(uiFont.Texture))
-	gl.GenerateMipmap(gl.TEXTURE_2D)
+	fontTexture := graphics.GetTexture(512, 512, uiFont.Texture)
+	graphics.SetTexture(fontTexture, 0)
 
 	aspectRatio := float64(WINDOW_WIDTH) / float64(WINDOW_HEIGHT)
 	var viewMatrixUniform graphics.Uniform
@@ -208,7 +200,7 @@ func main() {
 
 		// Let GLFW interface with the OS - not our job, right?
 		glfw.PollEvents()
-		input.Update(window)
+		platform.Update(window)
 
 		// Let's quit if user presses Esc, that cannot mean anything else.
 		escState := window.GetKey(glfw.KeyEscape)
@@ -217,7 +209,7 @@ func main() {
 		}
 
 		// Update mouse position and get position delta.
-		dx, dy := input.GetMouseDeltaPosition()
+		dx, dy := platform.GetMouseDeltaPosition()
 
 		// We got the cleaning done bitchez.
 		graphics.ClearScreen(0, 0, 0, 0)
@@ -229,14 +221,14 @@ func main() {
 		camChanged := false
 		uiResponsive := true
 		if !ui.IsRegisteringInput {
-			if input.IsMouseLeftButtonDown() {
+			if platform.IsMouseLeftButtonDown() {
 				azimuth -= dx / 100.0
 				polar -= dy / 100.0
 				camChanged = true
 				uiResponsive = false
 			}
 	
-			mouseWheelDelta := input.GetMouseWheelDelta()
+			mouseWheelDelta := platform.GetMouseWheelDelta()
 			if mouseWheelDelta != 0.0 {
 				radius -= mouseWheelDelta / 2.0
 				camChanged = true

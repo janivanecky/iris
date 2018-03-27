@@ -80,6 +80,8 @@ type Mesh struct {
 	indexCount int32	
 }
 
+type Texture uint32
+
 var shaderTypeToGL = map[ShaderType]uint32 {
 	VERTEX_SHADER: gl.VERTEX_SHADER,
 	PIXEL_SHADER: gl.FRAGMENT_SHADER,
@@ -136,6 +138,31 @@ func ReleaseShaders(shaders ...Shader) {
 	for _, shader := range shaders {
 		gl.DeleteShader(uint32(shader))
 	}
+}
+
+func GetTexture(width int, height int, data []uint8) Texture {
+	var textureID uint32
+	gl.GenTextures(1, &textureID)
+	gl.BindTexture(gl.TEXTURE_2D, textureID)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RED, int32(width), int32(height), 0, gl.RED, gl.UNSIGNED_BYTE, gl.Ptr(data))
+	gl.GenerateMipmap(gl.TEXTURE_2D)
+	return Texture(textureID)
+}
+
+var slotToEnum = [...]uint32 {
+	gl.TEXTURE0,
+	gl.TEXTURE1,
+	gl.TEXTURE2,
+	gl.TEXTURE3,
+}
+
+func SetTexture(texture Texture, slot int) {
+	gl.BindTexture(gl.TEXTURE_2D, uint32(texture)) 
+	gl.ActiveTexture(slotToEnum[slot])
 }
 
 func GetUniform(program Program, uniformName string) Uniform {

@@ -2,7 +2,7 @@ package ui
 
 import (
 	gmath "../math"
-	"../input"
+	"../platform"
     "fmt"
     "sort"
     "math"
@@ -76,7 +76,7 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
     // Check for mouse input
     if isInputResponsive {
         // Check if mouse over
-		mouseX, mouseY := input.GetMousePosition()
+		mouseX, mouseY := platform.GetMousePosition()
 		
 		if isInRect(gmath.Vec2{float32(mouseX), float32(mouseY)}, bgBoxPos, bgBoxSize) {
 			setHot(toggleID)
@@ -85,11 +85,11 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
         }
 
         // If toggle is hot, check for mouse press
-        if isHot(toggleID) && input.IsMouseLeftButtonPressed() {
+        if isHot(toggleID) && platform.IsMouseLeftButtonPressed() {
             newValue = !newValue
             changed = true
             setActive(toggleID)
-        } else if isActive(toggleID) && !input.IsMouseLeftButtonDown() {
+        } else if isActive(toggleID) && !platform.IsMouseLeftButtonDown() {
             unsetActive(toggleID)
         }
     } else {
@@ -172,7 +172,7 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
 
     // Check for mouse input
     if isInputResponsive {
-        mouseX, mouseY := input.GetMousePosition()
+        mouseX, mouseY := platform.GetMousePosition()
         mousePosition := gmath.Vec2{float32(mouseX), float32(mouseY)}
         if isInRect(mousePosition, sliderPos, sliderSize) {       
             setHot(sliderID)
@@ -182,9 +182,9 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
 
         overallSliderSize := gmath.Vec2{sliderBarSize[0], sliderSize[1]}
         overallSliderPos := sliderBarPos
-        if (isHot(sliderID) || isInRect(mousePosition, overallSliderPos, overallSliderSize)) && !isActive(sliderID) && input.IsMouseLeftButtonPressed() {
+        if (isHot(sliderID) || isInRect(mousePosition, overallSliderPos, overallSliderSize)) && !isActive(sliderID) && platform.IsMouseLeftButtonPressed() {
             setActive(sliderID)
-        } else if isActive(sliderID) && !input.IsMouseLeftButtonDown() {
+        } else if isActive(sliderID) && !platform.IsMouseLeftButtonDown() {
             unsetActive(sliderID)
         }
     } else {
@@ -202,7 +202,7 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     }
 
     if isActive(sliderID) {
-        mouseX, _ := input.GetMousePosition()
+        mouseX, _ := platform.GetMousePosition()
         mouseXRel := (float32(mouseX) - sliderBarPos[0] - sliderSize[0] * 0.5) / (sliderBarSize[0] - sliderSize[0]);
         
         // TODO: Clamp!!

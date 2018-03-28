@@ -1,20 +1,28 @@
 =========================
 TODO
 =========================
-- input module handles keys
-- reset state (blend/depth) after text draw
-- cleanup
-    - clean main.go
-    - application code module
-- checkerboard texture
-- PBR shader
+- render.go GraphicsObjects struct
+- render.go cleanup
+- ui inputResponsive neater solution
+- clean main.go
 - comment and clean font.go
 - comment and clean graphics.go
 - comment and clean math.go
+- comment and clean ui.go
+- comment and clean input.go
+- comment and clean platform.go
+- input module handles keys
+- DrawMesh - position/color
+- lib files use interfaces to remove dependencies
+- checkerboard texture
+- PBR shader
 
 =========================
 DONE
 =========================
+28/03/18
+- application code module
+
 27/03/18
 - platform.go (input + GLFW)
 - make UI module graphics independent

@@ -19,6 +19,8 @@ func initInput(window *glfw.Window) {
 }
 
 func Update(window *glfw.Window) {
+	glfw.PollEvents()
+	
 	mouseButtonPressed = false
 
 	// Update mouse position and get position delta.

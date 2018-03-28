@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	_ "fmt"
 	"io/ioutil"
 	"math"
 	"time"
@@ -12,12 +12,13 @@ import (
 	"./lib/font"
 	"./lib/ui"
 	"./lib/platform"
+	"./app"
 	gmath "./lib/math"
 
 	"runtime"
-	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
+// TODO: move to platform(?)
 func init() {
 	// GLFW event handling must run on the main OS thread
 	runtime.LockOSThread()
@@ -35,136 +36,18 @@ func vecFromPolarCoords(azimuth float64, polar float64, radius float64) gmath.Ve
 const WINDOW_WIDTH = 800
 const WINDOW_HEIGHT = 600
 
-var program_text graphics.Program
-var textModelMatrixUniform graphics.Uniform
-var projectionMatrixTextUniform graphics.Uniform
-var sourceRectUniform graphics.Uniform
-var textColorUniform graphics.Uniform
-var projectionMatrix gmath.Matrix4x4
-
-var program_rect graphics.Program
-var projectionMatrixRectUniform graphics.Uniform
-var rectColorUniform graphics.Uniform
-var rectModelMatrixUniform graphics.Uniform
-
-var quad graphics.Mesh
-var uiFont font.Font
-
 func main() {
 	window := platform.GetWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "New fancy window")
 	defer platform.ReleaseWindow()
-	graphics.Init()
-
+	
 	truetypeBytes, err := ioutil.ReadFile("fonts/font.ttf")
 	if err != nil {
 		panic(err)
     }
-
+	
 	scale := platform.GetWindowScaling()
-    uiFont = font.GetFont(truetypeBytes, 20.0, scale)
-	
-	ui.Init(WINDOW_WIDTH, WINDOW_HEIGHT, uiFont)
-	
-	// Text rendering shaders
-	vertexShaderData, err := ioutil.ReadFile("shaders/text_vertex_shader.glsl")
-	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err := ioutil.ReadFile("shaders/text_pixel_shader.glsl")
-	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_text, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_text)
-
-	projectionMatrixTextUniform = graphics.GetUniform(program_text, "projection_matrix")
-	sourceRectUniform = graphics.GetUniform(program_text, "source_rect")
-	textModelMatrixUniform = graphics.GetUniform(program_text, "model_matrix")
-	textColorUniform = graphics.GetUniform(program_text, "color")
-
-	// Rect rendering shaders
-	vertexShaderData, err = ioutil.ReadFile("shaders/rect_vertex_shader.glsl")
-	vertexShader, err = graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err = ioutil.ReadFile("shaders/rect_pixel_shader.glsl")
-	pixelShader, err = graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_rect, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_rect)
-
-	projectionMatrixRectUniform = graphics.GetUniform(program_rect, "projection_matrix")
-	rectColorUniform = graphics.GetUniform(program_rect, "color")
-	rectModelMatrixUniform = graphics.GetUniform(program_rect, "model_matrix")
-    
-    projectionMatrix = gmath.GetOrthographicProjectionGLRH(0.0, float64(WINDOW_WIDTH),
-                                                           0.0, float64(WINDOW_HEIGHT),
-                                                           10.0, -10.0)
-    
-    quad = graphics.GetMesh(quadVertices[:], quadIndices[:], []int{4, 2})
-
-	fontTexture := graphics.GetTexture(512, 512, uiFont.Texture)
-	graphics.SetTexture(fontTexture, 0)
-
-	aspectRatio := float64(WINDOW_WIDTH) / float64(WINDOW_HEIGHT)
-	var viewMatrixUniform graphics.Uniform
-	var projectionMatrixMeshUniform graphics.Uniform
-	var program_mesh graphics.Program
-	var viewMatrix gmath.Matrix4x4
-	{
-		// Vertex shader
-		vertexShaderData, err := ioutil.ReadFile("shaders/simple_vertex_shader.glsl")
-		vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		pixelShaderData, err := ioutil.ReadFile("shaders/simple_pixel_shader.glsl")
-		pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		program_mesh, err = graphics.GetProgram(vertexShader, pixelShader)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		graphics.ReleaseShaders(vertexShader, pixelShader)
-		graphics.SetProgram(program_mesh)
-
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, aspectRatio, 0.01, 1000.0)
-		projectionMatrixMeshUniform = graphics.GetUniform(program_mesh, "projection_matrix")
-		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
-
-		viewMatrix = gmath.GetTranslation(0.0, 0.0, -5.0)
-		viewMatrixUniform = graphics.GetUniform(program_mesh, "view_matrix")
-		graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
-
-		lightPos := gmath.Vec3{10, 20, 30}
-		lightPositionUniform := graphics.GetUniform(program_mesh, "light_position")
-		graphics.SetUniformVec3(lightPositionUniform, lightPos)
-	}
-	
+    uiFont := font.GetFont(truetypeBytes, 20.0, scale)
+	app.InitRendering(WINDOW_WIDTH, WINDOW_HEIGHT, uiFont)
 	
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
 
@@ -176,15 +59,14 @@ func main() {
 	val := 0.5
 
 	start := time.Now()
+
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
 		t := time.Now()
-		elapsed := t.Sub(start)
+		_ = t.Sub(start)
 		start = t
-		fmt.Errorf("Dt", elapsed)
 
 		// Let GLFW interface with the OS - not our job, right?
-		glfw.PollEvents()
 		platform.Update(window)
 
 		// Let's quit if user presses Esc, that cannot mean anything else.
@@ -196,15 +78,9 @@ func main() {
 		// Update mouse position and get position delta.
 		dx, dy := platform.GetMouseDeltaPosition()
 
-		// We got the cleaning done bitchez.
-		graphics.ClearScreen(0, 0, 0, 0)
-		gl.Disable(gl.BLEND)
-		gl.Enable(gl.DEPTH_TEST)
-
-		graphics.SetProgram(program_mesh)
-
 		camChanged := false
 		uiResponsive := true
+
 		if !ui.IsRegisteringInput {
 			if platform.IsMouseLeftButtonDown() {
 				azimuth -= dx / 100.0
@@ -221,108 +97,30 @@ func main() {
 	
 			if camChanged {
 				camPosition := vecFromPolarCoords(azimuth, polar, radius)
-				viewMatrix = gmath.GetLookAt(camPosition, gmath.Vec3{}, gmath.Vec3{0, 1, 0})
+				app.SetCameraPosition(camPosition)
 			}
 		}
-		graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
-
-		// Draw scene.
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, aspectRatio, 0.01, 100.0)
-		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
-		graphics.DrawMesh(cube)
-
 
 		panel := ui.StartPanel("Test panel", gmath.Vec2{})
 		toggle, _ = panel.AddToggle("test", toggle)
 		val, _ = panel.AddSlider("test2", val, 0, 1)
 		panel.End()
-
-		
-		rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
-		
-		for _, rectData := range rectRenderingBuffer {
-			DrawRect(rectData.Position, rectData.Size, rectData.Color)
-		}
-		
-		for _, textData := range textRenderingBuffer {
-			DrawText(textData.Text, &uiFont, textData.Position, textData.Color, textData.Origin)
-		}
 		
 		if !ui.IsRegisteringInput {
 			ui.SetInputResponsive(uiResponsive)
 		}
-		DrawRect(gmath.Vec2{400,0}, gmath.Vec2{200,40}, gmath.Vec4{1,0,0,1})
-		DrawText("TEST", &uiFont, gmath.Vec2{400,0}, gmath.Vec4{0,0,1,0}, gmath.Vec2{})
 
-		ui.Clear()
+		app.DrawRect(gmath.Vec2{400,0}, gmath.Vec2{200,40}, gmath.Vec4{1,0,0,1})
+		app.DrawText("TEST", &uiFont, gmath.Vec2{400,0}, gmath.Vec4{0,0,1,0}, gmath.Vec2{})
+		
+		app.DrawMesh(cube)
+		app.Render()
 		
 		// Swappity-swap.
 		window.SwapBuffers()
 	}
 }
 
-
-func DrawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec4, origin gmath.Vec2) {
-	graphics.SetProgram(program_text)
-	graphics.SetUniformMatrix(projectionMatrixTextUniform, projectionMatrix)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	
-	width, height := font.GetStringWidth(text), font.RowHeight
-	x := math.Floor(float64(position[0]) - width * float64(origin[0]))
-	y := math.Floor(float64(position[1]) + font.TopPad - float64(height) * float64(origin[1]))
-    texWidth := float32(512.0)
-	for _, char := range text {
-        glyphA := font.Glyphs[char]
-		relX := float32(glyphA.X) / texWidth
-		relY := 1.0 - float32(glyphA.Y + glyphA.BitmapHeight) / texWidth
-		relWidth := float32(glyphA.BitmapWidth) / texWidth
-		relHeight := float32(glyphA.BitmapHeight) / texWidth
-        sourceRect := gmath.Vec4{relX,relY,relWidth,relHeight}
-		graphics.SetUniformVec4(sourceRectUniform, sourceRect)
-		graphics.SetUniformVec4(textColorUniform, color)
-
-		currentX := x + glyphA.XOffset
-		currentY := y + glyphA.YOffset
-		modelMatrix := gmath.Matmul(
-			gmath.GetTranslation(currentX, WINDOW_HEIGHT - currentY, 0),
-			gmath.Matmul(
-                gmath.GetScale(glyphA.Width, glyphA.Height, 1.0),
-				gmath.GetTranslation(0.5, -0.5, 0.0),
-			),
-		)
-		graphics.SetUniformMatrix(textModelMatrixUniform, modelMatrix)			
-		
-		graphics.DrawMesh(quad)
-		
-		x += float64(glyphA.Advance)
-	}
-}
-
-func DrawRect(pos gmath.Vec2, size gmath.Vec2, color gmath.Vec4) {
-	graphics.SetProgram(program_rect)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	graphics.SetUniformMatrix(projectionMatrixRectUniform, projectionMatrix)
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	
-	graphics.SetUniformVec4(rectColorUniform, color)
-	
-	x, y := pos[0], float32(WINDOW_HEIGHT) - pos[1]
-	modelMatrix := gmath.Matmul(
-		gmath.GetTranslation(float64(x), float64(y), 0),
-		gmath.Matmul(
-			gmath.GetScale(float64(size[0]), float64(size[1]), 1.0),
-			gmath.GetTranslation(0.5, -0.5, 0.0),
-		),
-	)
-	graphics.SetUniformMatrix(rectModelMatrixUniform, modelMatrix)
-		
-	graphics.DrawMesh(quad)
-}
 
 
 var cubeVertices = [...]float32{
@@ -407,18 +205,3 @@ var cubeIndices = [...]uint32{
 	20, 22, 23,
 }
 
-var quadVertices = [...]float32{
-	-0.5, -0.5, 0.0, 1.0,
-	0.0, 0.0,
-	-0.5, 0.5, 0.0, 1.0,
-	0.0, 1.0,
-	0.5, 0.5, 0.0, 1.0,
-	1.0, 1.0,
-	0.5, -0.5, 0.0, 1.0,
-	1.0, 0.0,
-}
-
-var quadIndices = [...]uint32{
-	0, 1, 2,
-	0, 2, 3,
-}

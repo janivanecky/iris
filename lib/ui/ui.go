@@ -45,9 +45,9 @@ var screenHeight float64 = 0
 
 var uiFont font.Font
 
-func Init(windowWidth int, windowHeight int, font font.Font) {
-    textRenderingBuffer = make([]textRenderingData, 100)
-    rectRenderingBuffer = make([]rectRenderingData, 100)
+func Init(windowWidth float64, windowHeight float64, font font.Font) {
+    textRenderingBuffer = make([]textRenderingData, 0, 100)
+    rectRenderingBuffer = make([]rectRenderingData, 0, 100)
     uiFont = font
 
     colorForeground = gmath.Vec4{
@@ -56,7 +56,7 @@ func Init(windowWidth int, windowHeight int, font font.Font) {
         float32(math.Pow(180.0 / 255.0, 2.2)),
         1,
     }
-	screenHeight = float64(windowHeight)
+	screenHeight = windowHeight
 }
 
 

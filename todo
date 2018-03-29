@@ -1,25 +1,34 @@
 =========================
+DOING
+=========================
+
+=========================
 TODO
 =========================
-- render.go GraphicsObjects struct
-- render.go cleanup
-- ui inputResponsive neater solution
-- clean main.go
+- library to different repo/folder
 - comment and clean font.go
 - comment and clean graphics.go
-- comment and clean math.go
 - comment and clean ui.go
 - comment and clean input.go
 - comment and clean platform.go
-- input module handles keys
+
 - DrawMesh - position/color
-- lib files use interfaces to remove dependencies
 - checkerboard texture
+- shader hot reloading
 - PBR shader
 
 =========================
 DONE
 =========================
+29/03/18
+- ditch math.go
+- lib files use interfaces to remove dependencies
+- clean main.go
+- input module handles keys
+- ui inputResponsive neater solution
+- render.go structs
+- render.go cleanup
+
 28/03/18
 - application code module
 

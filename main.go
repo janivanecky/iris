@@ -6,26 +6,16 @@ import (
 	"math"
 	"time"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
-
 	"./lib/graphics"
 	"./lib/font"
 	"./lib/ui"
 	"./lib/platform"
 	"./app"
-	gmath "./lib/math"
-
-	"runtime"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
-// TODO: move to platform(?)
-func init() {
-	// GLFW event handling must run on the main OS thread
-	runtime.LockOSThread()
-}
-
-func vecFromPolarCoords(azimuth float64, polar float64, radius float64) gmath.Vec3 {
-	result := gmath.Vec3{
+func vecFromPolarCoords(azimuth float64, polar float64, radius float64) mgl32.Vec3 {
+	result := mgl32.Vec3{
 		float32(math.Sin(polar) * math.Sin(azimuth) * radius),
 		float32(math.Cos(polar) * radius),
 		float32(math.Sin(polar) * math.Cos(azimuth) * radius),
@@ -33,11 +23,11 @@ func vecFromPolarCoords(azimuth float64, polar float64, radius float64) gmath.Ve
 	return result
 }
 
-const WINDOW_WIDTH = 800
-const WINDOW_HEIGHT = 600
+const windowWidth = 800
+const windowHeight = 600
 
 func main() {
-	window := platform.GetWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "New fancy window")
+	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window")
 	defer platform.ReleaseWindow()
 	
 	truetypeBytes, err := ioutil.ReadFile("fonts/font.ttf")
@@ -47,7 +37,7 @@ func main() {
 	
 	scale := platform.GetWindowScaling()
     uiFont := font.GetFont(truetypeBytes, 20.0, scale)
-	app.InitRendering(WINDOW_WIDTH, WINDOW_HEIGHT, uiFont)
+	app.InitRendering(windowWidth, windowHeight, uiFont)
 	
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
 
@@ -60,33 +50,38 @@ func main() {
 
 	start := time.Now()
 
+	camPosition := vecFromPolarCoords(azimuth, polar, radius)
+	app.SetCameraPosition(camPosition)
+
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
 		t := time.Now()
 		_ = t.Sub(start)
 		start = t
 
-		// Let GLFW interface with the OS - not our job, right?
 		platform.Update(window)
 
 		// Let's quit if user presses Esc, that cannot mean anything else.
-		escState := window.GetKey(glfw.KeyEscape)
-		if escState == glfw.Press {
+		if platform.IsEscPressed() {
 			break
 		}
 
+		panel := ui.StartPanel("Test panel", mgl32.Vec2{})
+		toggle, _ = panel.AddToggle("test", toggle)
+		val, _ = panel.AddSlider("test2", val, 0, 1)
+		panel.End()
+		
+		camChanged := false
 		// Update mouse position and get position delta.
 		dx, dy := platform.GetMouseDeltaPosition()
-
-		camChanged := false
-		uiResponsive := true
-
 		if !ui.IsRegisteringInput {
 			if platform.IsMouseLeftButtonDown() {
 				azimuth -= dx / 100.0
 				polar -= dy / 100.0
 				camChanged = true
-				uiResponsive = false
+				ui.SetInputResponsive(false)
+			} else {
+				ui.SetInputResponsive(true)
 			}
 	
 			mouseWheelDelta := platform.GetMouseWheelDelta()
@@ -101,17 +96,8 @@ func main() {
 			}
 		}
 
-		panel := ui.StartPanel("Test panel", gmath.Vec2{})
-		toggle, _ = panel.AddToggle("test", toggle)
-		val, _ = panel.AddSlider("test2", val, 0, 1)
-		panel.End()
-		
-		if !ui.IsRegisteringInput {
-			ui.SetInputResponsive(uiResponsive)
-		}
-
-		app.DrawRect(gmath.Vec2{400,0}, gmath.Vec2{200,40}, gmath.Vec4{1,0,0,1})
-		app.DrawText("TEST", &uiFont, gmath.Vec2{400,0}, gmath.Vec4{0,0,1,0}, gmath.Vec2{})
+		app.DrawRect(mgl32.Vec2{400,0}, mgl32.Vec2{200,40}, mgl32.Vec4{1,0,0,1})
+		app.DrawText("TEST", &uiFont, mgl32.Vec2{400,0}, mgl32.Vec4{0,0,1,0}, mgl32.Vec2{})
 		
 		app.DrawMesh(cube)
 		app.Render()
@@ -120,7 +106,6 @@ func main() {
 		window.SwapBuffers()
 	}
 }
-
 
 
 var cubeVertices = [...]float32{

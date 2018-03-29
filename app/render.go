@@ -1,299 +1,302 @@
 package app
 
 import (
-	gmath "../lib/math"
 	"../lib/font"
 	"../lib/graphics"
 	"../lib/ui"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"math"
 	"io/ioutil"
 	"fmt"
 )
 
-var program_text graphics.Program
-var textModelMatrixUniform graphics.Uniform
-var projectionMatrixTextUniform graphics.Uniform
-var sourceRectUniform graphics.Uniform
-var textColorUniform graphics.Uniform
-var projectionMatrix gmath.Matrix4x4
-
-var program_rect graphics.Program
-var projectionMatrixRectUniform graphics.Uniform
-var rectColorUniform graphics.Uniform
-var rectModelMatrixUniform graphics.Uniform
-
-var screenWidth float64 = 0.0
-var screenHeight float64 = 0.0
-
-var quad graphics.Mesh
-var aspectRatio float64 = 1.0
-
-var viewMatrixUniform graphics.Uniform
-var projectionMatrixMeshUniform graphics.Uniform
-var program_mesh graphics.Program
-
-var fontTexture graphics.Texture
-var fontUI font.Font
-
-func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font) {
-	rectEntities = make([]rectData, 0, 100)
-	textEntities = make([]textData, 0, 100)
-	meshEntities = make([]meshData, 0, 100)
+type pipelineData struct {
+	textProgram graphics.Program
+	textProjectionMatrixUniform graphics.Uniform
+	textModelMatrixUniform graphics.Uniform
+	textSourceRectUniform graphics.Uniform
+	textColorUniform graphics.Uniform
 	
-	graphics.Init()
-	fontUI = uiFont
-	ui.Init(windowWidth, windowHeight, uiFont)
-	fontTexture = graphics.GetTexture(512, 512, uiFont.Texture)
-	
-	screenWidth = windowWidth
-	screenHeight = windowHeight
+	rectProgram graphics.Program
+	rectProjectionMatrixUniform graphics.Uniform
+	rectModelMatrixUniform graphics.Uniform
+	rectColorUniform graphics.Uniform
 
-	// Text rendering shaders
-	vertexShaderData, err := ioutil.ReadFile("shaders/text_vertex_shader.glsl")
-	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err := ioutil.ReadFile("shaders/text_pixel_shader.glsl")
-	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_text, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_text)
-
-	projectionMatrixTextUniform = graphics.GetUniform(program_text, "projection_matrix")
-	sourceRectUniform = graphics.GetUniform(program_text, "source_rect")
-	textModelMatrixUniform = graphics.GetUniform(program_text, "model_matrix")
-	textColorUniform = graphics.GetUniform(program_text, "color")
-
-	// Rect rendering shaders
-	vertexShaderData, err = ioutil.ReadFile("shaders/rect_vertex_shader.glsl")
-	vertexShader, err = graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pixelShaderData, err = ioutil.ReadFile("shaders/rect_pixel_shader.glsl")
-	pixelShader, err = graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	program_rect, err = graphics.GetProgram(vertexShader, pixelShader)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	graphics.ReleaseShaders(vertexShader, pixelShader)
-	graphics.SetProgram(program_rect)
-
-	projectionMatrixRectUniform = graphics.GetUniform(program_rect, "projection_matrix")
-	rectColorUniform = graphics.GetUniform(program_rect, "color")
-	rectModelMatrixUniform = graphics.GetUniform(program_rect, "model_matrix")
-    
-    projectionMatrix = gmath.GetOrthographicProjectionGLRH(0.0, screenWidth,
-                                                           0.0, screenHeight,
-														   10.0, -10.0)
-
-	quad = graphics.GetMesh(quadVertices[:], quadIndices[:], []int{4, 2})
-
-
-
-
-
-	aspectRatio = screenWidth / screenHeight
-	
-	{
-		// Vertex shader
-		vertexShaderData, err := ioutil.ReadFile("shaders/simple_vertex_shader.glsl")
-		vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		pixelShaderData, err := ioutil.ReadFile("shaders/simple_pixel_shader.glsl")
-		pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		program_mesh, err = graphics.GetProgram(vertexShader, pixelShader)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		graphics.ReleaseShaders(vertexShader, pixelShader)
-		graphics.SetProgram(program_mesh)
-
-		projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, aspectRatio, 0.01, 1000.0)
-		projectionMatrixMeshUniform = graphics.GetUniform(program_mesh, "projection_matrix")
-		graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
-
-		viewMatrix = gmath.GetTranslation(0.0, 0.0, -5.0)
-		viewMatrixUniform = graphics.GetUniform(program_mesh, "view_matrix")
-		graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
-
-		lightPos := gmath.Vec3{10, 20, 30}
-		lightPositionUniform := graphics.GetUniform(program_mesh, "light_position")
-		graphics.SetUniformVec3(lightPositionUniform, lightPos)
-	}
+	sceneViewMatrixUniform graphics.Uniform
+	sceneProjectionMatrixUniform graphics.Uniform
+	sceneLightPositionUniform graphics.Uniform
+	sceneProgram graphics.Program
 }
+var pipelines pipelineData
 
 type textData struct {
 	font *font.Font
 	text string
-	pos gmath.Vec2
-	color gmath.Vec4
-	origin gmath.Vec2
+	pos mgl32.Vec2
+	color mgl32.Vec4
+	origin mgl32.Vec2
 }
-
 var textEntities []textData
-
-func DrawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec4, origin gmath.Vec2) {
-	textEntities = append(textEntities, textData{font, text, position, color, origin})
-}
-
-func drawText(text string, font *font.Font, position gmath.Vec2, color gmath.Vec4, origin gmath.Vec2) {
-	graphics.SetProgram(program_text)
-	graphics.SetTexture(fontTexture, 0)
-	graphics.SetUniformMatrix(projectionMatrixTextUniform, projectionMatrix)
-	
-	width, height := font.GetStringWidth(text), font.RowHeight
-	x := math.Floor(float64(position[0]) - width * float64(origin[0]))
-	y := math.Floor(float64(position[1]) + font.TopPad - float64(height) * float64(origin[1]))
-    texWidth := float32(512.0)
-	for _, char := range text {
-        glyphA := font.Glyphs[char]
-		relX := float32(glyphA.X) / texWidth
-		relY := 1.0 - float32(glyphA.Y + glyphA.BitmapHeight) / texWidth
-		relWidth := float32(glyphA.BitmapWidth) / texWidth
-		relHeight := float32(glyphA.BitmapHeight) / texWidth
-        sourceRect := gmath.Vec4{relX,relY,relWidth,relHeight}
-		graphics.SetUniformVec4(sourceRectUniform, sourceRect)
-		graphics.SetUniformVec4(textColorUniform, color)
-
-		currentX := x + glyphA.XOffset
-		currentY := y + glyphA.YOffset
-		modelMatrix := gmath.Matmul(
-			gmath.GetTranslation(currentX, screenHeight - currentY, 0),
-			gmath.Matmul(
-                gmath.GetScale(glyphA.Width, glyphA.Height, 1.0),
-				gmath.GetTranslation(0.5, -0.5, 0.0),
-			),
-		)
-		graphics.SetUniformMatrix(textModelMatrixUniform, modelMatrix)			
-		
-		graphics.DrawMesh(quad)
-		
-		x += float64(glyphA.Advance)
-	}
-}
-
-var viewMatrix gmath.Matrix4x4
-func SetCameraPosition(position gmath.Vec3) {
-	viewMatrix = gmath.GetLookAt(position, gmath.Vec3{}, gmath.Vec3{0, 1, 0})
-}
 
 type meshData struct {
 	mesh graphics.Mesh
 }
-
 var meshEntities []meshData
 
-func DrawMesh(mesh graphics.Mesh) {
-	meshEntities = append(meshEntities, meshData{mesh})
-}
-
-func drawMesh(mesh graphics.Mesh) {
-	graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
-	graphics.SetProgram(program_mesh)
-
-	// Draw scene.
-	projectionMatrix := gmath.GetPerspectiveProjectionGLRH(60.0*math.Pi/180.0, aspectRatio, 0.01, 100.0)
-	graphics.SetUniformMatrix(projectionMatrixMeshUniform, projectionMatrix)
-
-	graphics.SetUniformMatrix(viewMatrixUniform, viewMatrix)
-	graphics.DrawMesh(mesh)
-}
-
 type rectData struct {
-	pos gmath.Vec2
-	size gmath.Vec2
-	color gmath.Vec4
+	pos mgl32.Vec2
+	size mgl32.Vec2
+	color mgl32.Vec4
 }
-
 var rectEntities []rectData
 
-func DrawRect(pos gmath.Vec2, size gmath.Vec2, color gmath.Vec4) {
-	rectEntities = append(rectEntities, rectData{pos, size, color})
+type uiSettings struct {
+	font font.Font
+	fontTexture graphics.Texture
+	quad graphics.Mesh
+	projectionMatrix mgl32.Mat4
 }
+var uiData uiSettings
 
-func drawRect(pos gmath.Vec2, size gmath.Vec2, color gmath.Vec4) {
-	graphics.SetProgram(program_rect)
-	graphics.SetUniformMatrix(projectionMatrixRectUniform, projectionMatrix)
-	graphics.SetUniformVec4(rectColorUniform, color)
-		
-	x, y := pos[0], float32(screenHeight) - pos[1]
-	modelMatrix := gmath.Matmul(
-		gmath.GetTranslation(float64(x), float64(y), 0),
-		gmath.Matmul(
-			gmath.GetScale(float64(size[0]), float64(size[1]), 1.0),
-			gmath.GetTranslation(0.5, -0.5, 0.0),
-		),
-	)
-	graphics.SetUniformMatrix(rectModelMatrixUniform, modelMatrix)
-		
-	graphics.DrawMesh(quad)
+type sceneSettings struct {
+	projectionMatrix mgl32.Mat4
+	viewMatrix mgl32.Mat4
+	lightPosition mgl32.Vec3
+}
+var sceneData sceneSettings
+
+var screenWidth float64
+var screenHeight float64
+
+func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font) {
+	// Set up libraries
+	graphics.Init()
+	ui.Init(windowWidth, windowHeight, &uiFont)
+
+	// Set up entity rendering lists
+	rectEntities = make([]rectData, 0, 100)
+	textEntities = make([]textData, 0, 100)
+	meshEntities = make([]meshData, 0, 100)
+
+	// Fetch screen size
+	screenWidth = windowWidth
+	screenHeight = windowHeight
+
+	// Initialize UI rendering data
+	uiData = uiSettings{
+		uiFont,
+		graphics.GetTexture(512, 512, uiFont.Texture),
+		graphics.GetMesh(quadVertices[:], quadIndices[:], []int{4, 2}),
+		//mgl32.GetOrthographicProjectionGLRH(0.0, screenWidth, 0.0, screenHeight, 10.0, -10.0),
+		mgl32.Ortho(0.0, float32(screenWidth), 0.0, float32(screenHeight), 10.0, -10.0),
+	}
+
+	// Initialize scene rednering data
+	sceneData = sceneSettings{
+		mgl32.Perspective(mgl32.DegToRad(60.0), float32(screenWidth / screenHeight), 0.01, 100.0),
+		mgl32.Ident4(),
+		mgl32.Vec3{10, 20, 30},
+	}
+	
+	// Text rendering program setup
+	var err error
+	pipelines.textProgram, err = getProgram("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	graphics.SetProgram(pipelines.textProgram)
+	pipelines.textProjectionMatrixUniform = graphics.GetUniform(pipelines.textProgram, "projection_matrix")
+	pipelines.textModelMatrixUniform = graphics.GetUniform(pipelines.textProgram, "model_matrix")
+	pipelines.textSourceRectUniform = graphics.GetUniform(pipelines.textProgram, "source_rect")
+	pipelines.textColorUniform = graphics.GetUniform(pipelines.textProgram, "color")
+
+	// Rect rendering program setup
+	pipelines.rectProgram, err = getProgram("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	graphics.SetProgram(pipelines.rectProgram)
+	pipelines.rectProjectionMatrixUniform = graphics.GetUniform(pipelines.rectProgram, "projection_matrix")
+	pipelines.rectModelMatrixUniform = graphics.GetUniform(pipelines.rectProgram, "model_matrix")
+	pipelines.rectColorUniform = graphics.GetUniform(pipelines.rectProgram, "color")
+    
+	// 3D rendering program setup
+	pipelines.sceneProgram, err = getProgram("shaders/simple_vertex_shader.glsl", "shaders/simple_pixel_shader.glsl")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	graphics.SetProgram(pipelines.sceneProgram)
+	pipelines.sceneProjectionMatrixUniform = graphics.GetUniform(pipelines.sceneProgram, "projection_matrix")
+	pipelines.sceneViewMatrixUniform = graphics.GetUniform(pipelines.sceneProgram, "view_matrix")
+	pipelines.sceneLightPositionUniform = graphics.GetUniform(pipelines.sceneProgram, "light_position")
 }
 
 func Render() {
 	// We got the cleaning done bitchez.
 	graphics.ClearScreen(0, 0, 0, 0)
 
+	// Set up 3D scene rendering settings
 	gl.Disable(gl.BLEND)
 	gl.Enable(gl.DEPTH_TEST)
 	
+	// Set up 3D scene rendering pipeline
+	graphics.SetProgram(pipelines.sceneProgram)
+	graphics.SetUniformMatrix(pipelines.sceneViewMatrixUniform, sceneData.viewMatrix)
+	graphics.SetUniformMatrix(pipelines.sceneProjectionMatrixUniform, sceneData.projectionMatrix)
+	graphics.SetUniformVec3(pipelines.sceneLightPositionUniform, sceneData.lightPosition)
+	
+	// Render meshes
 	for _, meshEntity := range meshEntities {
 		drawMesh(meshEntity.mesh)
 	}
 
+	// Set up 2D UI rendering settings
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	
+	// Get UI rendering buffers
 	rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
+
+	// Set up 2D rect rendering pipeline
+	graphics.SetProgram(pipelines.rectProgram)
+	graphics.SetUniformMatrix(pipelines.rectProjectionMatrixUniform, uiData.projectionMatrix)
 	
-	// UI Rendering
+	// Render UI rects
 	for _, rectData := range rectRenderingBuffer {
 		drawRect(rectData.Position, rectData.Size, rectData.Color)
 	}
 	
-	for _, textData := range textRenderingBuffer {
-		drawText(textData.Text, &fontUI, textData.Position, textData.Color, textData.Origin)
-	}
-
-	// Custom rect/text rendering
+	// Render the rest of rects
 	for _, rectEntity := range rectEntities {
 		drawRect(rectEntity.pos, rectEntity.size, rectEntity.color)
 	}
 
+	// Set up 2D text rendering pipeline
+	graphics.SetProgram(pipelines.textProgram)
+	graphics.SetTexture(uiData.fontTexture, 0)
+	graphics.SetUniformMatrix(pipelines.textProjectionMatrixUniform, uiData.projectionMatrix)
+	
+	// Render UI text
+	for _, textData := range textRenderingBuffer {
+		drawText(textData.Text, &(uiData.font), textData.Position, textData.Color, textData.Origin)
+	}
+
+	// Render the rest of texts
 	for _, textEntity := range textEntities {
 		drawText(textEntity.text, textEntity.font, textEntity.pos, textEntity.color, textEntity.origin)
 	}
 	
+	// Clear rendering lists + UI
 	rectEntities = rectEntities[:0]
 	meshEntities = meshEntities[:0]
 	textEntities = textEntities[:0]
 	ui.Clear()
+}
+
+func DrawText(text string, font *font.Font, position mgl32.Vec2, color mgl32.Vec4, origin mgl32.Vec2) {
+	textEntities = append(textEntities, textData{font, text, position, color, origin})
+}
+
+func drawText(text string, font *font.Font, position mgl32.Vec2, color mgl32.Vec4, origin mgl32.Vec2) {
+	graphics.SetUniformVec4(pipelines.textColorUniform, color)
+	
+	width, height := font.GetStringWidth(text), font.RowHeight
+	x := math.Floor(float64(position[0]) - width * float64(origin[0]))
+	y := math.Floor(float64(position[1]) + font.TopPad - float64(height) * float64(origin[1]))
+    texWidth := float32(512.0)
+	for _, char := range text {
+		glyphA := font.Glyphs[char]
+		
+		relX := float32(glyphA.X) / texWidth
+		relY := 1.0 - float32(glyphA.Y + glyphA.BitmapHeight) / texWidth
+		relWidth := float32(glyphA.BitmapWidth) / texWidth
+		relHeight := float32(glyphA.BitmapHeight) / texWidth
+        sourceRect := mgl32.Vec4{relX,relY,relWidth,relHeight}
+		graphics.SetUniformVec4(pipelines.textSourceRectUniform, sourceRect)
+
+		currentX := x + glyphA.XOffset
+		currentY := y + glyphA.YOffset
+		modelMatrix := mgl32.Translate3D(float32(currentX), float32(screenHeight - currentY), 0).Mul4(
+                mgl32.Scale3D(float32(glyphA.Width), float32(glyphA.Height), 1.0).Mul4(
+					mgl32.Translate3D(0.5, -0.5, 0.0),
+			),
+		)
+		graphics.SetUniformMatrix(pipelines.textModelMatrixUniform, modelMatrix)			
+		
+		graphics.DrawMesh(uiData.quad)
+		
+		x += float64(glyphA.Advance)
+	}
+}
+
+func DrawMesh(mesh graphics.Mesh) {
+	meshEntities = append(meshEntities, meshData{mesh})
+}
+
+func drawMesh(mesh graphics.Mesh) {
+	graphics.DrawMesh(mesh)
+}
+
+func DrawRect(pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {
+	rectEntities = append(rectEntities, rectData{pos, size, color})
+}
+
+func drawRect(pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {
+	graphics.SetUniformVec4(pipelines.rectColorUniform, color)
+		
+	x, y := pos[0], float32(screenHeight) - pos[1]
+	modelMatrix := mgl32.Translate3D(x, y, 0).Mul4(
+			mgl32.Scale3D(size[0], size[1], 1.0).Mul4(
+				mgl32.Translate3D(0.5, -0.5, 0.0),
+		),
+	)
+	graphics.SetUniformMatrix(pipelines.rectModelMatrixUniform, modelMatrix)
+
+	graphics.DrawMesh(uiData.quad)
+}
+
+func SetCameraPosition(position mgl32.Vec3) {
+	sceneData.viewMatrix = mgl32.LookAtV(position, mgl32.Vec3{}, mgl32.Vec3{0, 1, 0})
+}
+
+func getProgram(vertexShaderPath string, pixelShaderPath string) (graphics.Program, error) {
+	vertexShaderData, err := ioutil.ReadFile(vertexShaderPath)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+	
+	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	pixelShaderData, err := ioutil.ReadFile(pixelShaderPath)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	program, err := graphics.GetProgram(vertexShader, pixelShader)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+	graphics.ReleaseShaders(vertexShader, pixelShader)
+
+	return program, nil
 }
 
 var quadVertices = [...]float32{

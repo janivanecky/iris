@@ -4,14 +4,14 @@ import (
     "fmt"
     "sort"
     "math"
-    "../font"
-	gmath "../math"
+
+	"github.com/go-gl/mathgl/mgl32"
 	"../platform"
 )
 
-var colorForeground gmath.Vec4 = gmath.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}
-var colorBackground gmath.Vec4 = gmath.Vec4{0.1,0.1,0.1,1}
-var colorLabel gmath.Vec4 = gmath.Vec4{1,1,1,1}
+var colorForeground mgl32.Vec4 = mgl32.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}
+var colorBackground mgl32.Vec4 = mgl32.Vec4{0.1,0.1,0.1,1}
+var colorLabel mgl32.Vec4 = mgl32.Vec4{1,1,1,1}
 
 var isInputResponsive bool = true
 
@@ -21,15 +21,15 @@ func SetInputResponsive(responsive bool) {
 
 type textRenderingData struct {
     Text string
-    Position gmath.Vec2
-    Origin gmath.Vec2
-    Color gmath.Vec4
+    Position mgl32.Vec2
+    Origin mgl32.Vec2
+    Color mgl32.Vec4
 }
 
 type rectRenderingData struct {
-    Position gmath.Vec2
-    Size gmath.Vec2
-    Color gmath.Vec4
+    Position mgl32.Vec2
+    Size mgl32.Vec2
+    Color mgl32.Vec4
     Layer int
 }
 
@@ -38,19 +38,24 @@ func (rectList rectRenderingDataList)Less(i, j int) bool {
     return rectList[i].Layer < rectList[j].Layer
 }
 
+type Font interface {
+    GetStringHeight() float64
+    GetStringWidth(string) float64
+}
+
 var textRenderingBuffer []textRenderingData
 var rectRenderingBuffer []rectRenderingData
 
 var screenHeight float64 = 0
 
-var uiFont font.Font
+var uiFont Font
 
-func Init(windowWidth float64, windowHeight float64, font font.Font) {
+func Init(windowWidth float64, windowHeight float64, font Font) {
     textRenderingBuffer = make([]textRenderingData, 0, 100)
     rectRenderingBuffer = make([]rectRenderingData, 0, 100)
     uiFont = font
 
-    colorForeground = gmath.Vec4{
+    colorForeground = mgl32.Vec4{
         float32(math.Pow(28.0 / 255.0, 2.2)), 
         float32(math.Pow(224.0 / 255.0, 2.2)),
         float32(math.Pow(180.0 / 255.0, 2.2)),
@@ -65,12 +70,12 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
 	newValue = active
 
     boxMiddleToTotal := 0.6
-    height := float64(uiFont.RowHeight)
+    height := float64(uiFont.GetStringHeight())
     
     itemPos := panel.position.Add(panel.itemPos)
 	toggleID := hashString(label)
 
-    bgBoxSize := gmath.Vec2{float32(height), float32(height)}
+    bgBoxSize := mgl32.Vec2{float32(height), float32(height)}
     bgBoxPos := itemPos
 
     // Check for mouse input
@@ -78,7 +83,7 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
         // Check if mouse over
 		mouseX, mouseY := platform.GetMousePosition()
 		
-		if isInRect(gmath.Vec2{float32(mouseX), float32(mouseY)}, bgBoxPos, bgBoxSize) {
+		if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, bgBoxPos, bgBoxSize) {
 			setHot(toggleID)
         } else {
             unsetHot(toggleID)
@@ -113,7 +118,7 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
 
     // Active part of toggle box
     if !active {
-        fgBoxSize := gmath.Vec2{float32(height * boxMiddleToTotal), float32(height *  boxMiddleToTotal)}
+        fgBoxSize := mgl32.Vec2{float32(height * boxMiddleToTotal), float32(height *  boxMiddleToTotal)}
         fgBoxPos := bgBoxPos.Add(
             bgBoxSize.Sub(fgBoxSize).Mul(0.5),
         )
@@ -125,9 +130,9 @@ func (panel *Panel) AddToggle(label string, active bool) (newValue bool, changed
 
 	// Draw toggle label
 	innerPadding := float32(10.0)
-	textPos := gmath.Vec2{bgBoxPos[0] + innerPadding + bgBoxSize[0], bgBoxPos[1]}
+	textPos := mgl32.Vec2{bgBoxPos[0] + innerPadding + bgBoxSize[0], bgBoxPos[1]}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        label, textPos, gmath.Vec2{}, colorLabel,
+        label, textPos, mgl32.Vec2{}, colorLabel,
     })
     textWidth := uiFont.GetStringWidth(label)
 	
@@ -143,44 +148,43 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     sliderID := hashString(label)
     itemPos := panel.position.Add(panel.itemPos)
     
-    height := float32(uiFont.RowHeight)
+    height := float32(uiFont.GetStringHeight())
     sliderWidth := float32(200.0)
 
     // Slider bar
     sliderStart := float32(0.0)
 
-    sliderBarColor := gmath.Vec4{colorBackground[0] * 2.0, colorBackground[1] * 2.0, colorBackground[2] * 2.0, 1.0}
-    //sliderBarColor := colorBackground.Mul(2.0)
-    //sliderBarColor[3] = 1.0
-    sliderBarPos := gmath.Vec2{itemPos[0] + sliderStart, itemPos[1]}
-    sliderBarSize := gmath.Vec2{sliderWidth, height}
+    sliderBarColor := colorBackground.Mul(2.0)
+    sliderBarColor[3] = 1.0
+    sliderBarPos := mgl32.Vec2{itemPos[0] + sliderStart, itemPos[1]}
+    sliderBarSize := mgl32.Vec2{sliderWidth, height}
     rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
         sliderBarPos, sliderBarSize, sliderBarColor, 1,
     })
     
     sliderColor := colorForeground
-    sliderSize := gmath.Vec2{height, height}
+    sliderSize := mgl32.Vec2{height, height}
     sliderX := float32((value - min) / (max - min)) * (sliderWidth - sliderSize[0]) + sliderBarPos[0] + sliderSize[0] * 0.5
-    sliderPos := gmath.Vec2{sliderX - sliderSize[0] * 0.5, itemPos[1]}
+    sliderPos := mgl32.Vec2{sliderX - sliderSize[0] * 0.5, itemPos[1]}
 
     // Number
-    currentPos := gmath.Vec2{sliderBarPos[0] + sliderBarSize[0] / 2.0, itemPos[1]}
+    currentPos := mgl32.Vec2{sliderBarPos[0] + sliderBarSize[0] / 2.0, itemPos[1]}
     numberString := fmt.Sprintf("%.02f", value)
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        numberString, currentPos, gmath.Vec2{0.5, 0}, colorLabel,
+        numberString, currentPos, mgl32.Vec2{0.5, 0}, colorLabel,
     })
 
     // Check for mouse input
     if isInputResponsive {
         mouseX, mouseY := platform.GetMousePosition()
-        mousePosition := gmath.Vec2{float32(mouseX), float32(mouseY)}
+        mousePosition := mgl32.Vec2{float32(mouseX), float32(mouseY)}
         if isInRect(mousePosition, sliderPos, sliderSize) {       
             setHot(sliderID)
         } else if !isActive(sliderID) {
             unsetHot(sliderID)
         }
 
-        overallSliderSize := gmath.Vec2{sliderBarSize[0], sliderSize[1]}
+        overallSliderSize := mgl32.Vec2{sliderBarSize[0], sliderSize[1]}
         overallSliderPos := sliderBarPos
         if (isHot(sliderID) || isInRect(mousePosition, overallSliderPos, overallSliderSize)) && !isActive(sliderID) && platform.IsMouseLeftButtonPressed() {
             setActive(sliderID)
@@ -193,12 +197,7 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     }
 
     if isHot(sliderID) {
-        sliderColor = gmath.Vec4{
-            sliderColor[0] * 0.8,
-            sliderColor[1] * 0.8,
-            sliderColor[2] * 0.8,
-            1.0,
-        }
+        sliderColor = sliderColor.Mul(0.8)
     }
 
     if isActive(sliderID) {
@@ -223,9 +222,9 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
     })
 
     // Slider label
-    textPos := gmath.Vec2{sliderBarSize[0] + sliderBarPos[0] + innerPadding, itemPos[1]}
+    textPos := mgl32.Vec2{sliderBarSize[0] + sliderBarPos[0] + innerPadding, itemPos[1]}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        label, textPos, gmath.Vec2{}, colorLabel,
+        label, textPos, mgl32.Vec2{}, colorLabel,
     })
     textWidth := uiFont.GetStringWidth(label)
 
@@ -237,26 +236,26 @@ func (panel *Panel) AddSlider(label string, value float64, min float64, max floa
 
 
 type Panel struct {
-    position gmath.Vec2
-    itemPos gmath.Vec2
+    position mgl32.Vec2
+    itemPos mgl32.Vec2
     maxWidth float64
     name string
 }
 
-func StartPanel(name string, position gmath.Vec2) Panel {
+func StartPanel(name string, position mgl32.Vec2) Panel {
     var panel Panel
     panel.position = position
     panel.name = name
     panel.maxWidth = float64(horizontalPadding)
     panel.itemPos[0] = horizontalPadding
-    panel.itemPos[1] = float32(uiFont.RowHeight) + verticalPadding * 2.0
+    panel.itemPos[1] = float32(uiFont.GetStringHeight()) + verticalPadding * 2.0
     return panel
 }
 
 func (panel *Panel) End() {
-    titlePos := gmath.Vec2{panel.position[0] + horizontalPadding, innerPadding}
+    titlePos := mgl32.Vec2{panel.position[0] + horizontalPadding, innerPadding}
     textRenderingBuffer = append(textRenderingBuffer, textRenderingData {
-        panel.name, titlePos, gmath.Vec2{}, colorBackground,
+        panel.name, titlePos, mgl32.Vec2{}, colorBackground,
     })
     titleWidth := uiFont.GetStringWidth(panel.name)
     panel.maxWidth = math.Max(panel.maxWidth, float64(titlePos[1]) + titleWidth)
@@ -264,12 +263,12 @@ func (panel *Panel) End() {
     panelHeight := panel.itemPos[1] + verticalPadding - innerPadding
     panelWidth := float32(panel.maxWidth) + horizontalPadding
     rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
-        panel.position, gmath.Vec2{panelWidth, panelHeight}, colorBackground, 0,
+        panel.position, mgl32.Vec2{panelWidth, panelHeight}, colorBackground, 0,
     })
 
-    titleBarHeight := float32(uiFont.RowHeight) + innerPadding * 2.0
+    titleBarHeight := float32(uiFont.GetStringHeight()) + innerPadding * 2.0
     rectRenderingBuffer = append(rectRenderingBuffer, rectRenderingData {
-        panel.position, gmath.Vec2{panelWidth, titleBarHeight}, colorForeground, 0,
+        panel.position, mgl32.Vec2{panelWidth, titleBarHeight}, colorForeground, 0,
     })
 }
 
@@ -286,7 +285,7 @@ func Clear() {
     textRenderingBuffer = textRenderingBuffer[:0]
 }
 
-func isInRect(position gmath.Vec2, rectPosition gmath.Vec2, rectSize gmath.Vec2) bool {
+func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2) bool {
     if position[0] >= rectPosition[0] && position[0] <= rectPosition[0] + rectSize[0] &&
        position[1] >= rectPosition[1] && position[1] <= rectPosition[1] + rectSize[1] {
 		   return true

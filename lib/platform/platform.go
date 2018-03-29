@@ -3,7 +3,13 @@ package platform
 import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"syscall"
+	"runtime"
 )
+
+func init() {
+	// GLFW event handling must run on the main OS thread
+	runtime.LockOSThread()
+}
 
 var windowScale float64 = 1.0
 

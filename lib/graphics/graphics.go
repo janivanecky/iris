@@ -2,9 +2,9 @@ package graphics
 
 import (
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 	"strings"
 	"fmt"
-	gmath "../math"
 )
 
 func Init() {
@@ -124,16 +124,16 @@ func GetUniform(program Program, uniformName string) Uniform {
 	return Uniform(location)
 }
 
-func SetUniformMatrix(uniform Uniform, matrix gmath.Matrix4x4) {
-	gl.UniformMatrix4fv(int32(uniform), 1, false, &matrix[0][0])
+func SetUniformMatrix(uniform Uniform, matrix mgl32.Mat4) {
+	gl.UniformMatrix4fv(int32(uniform), 1, false, &matrix[0])
 }
 
-func SetUniformVec3(uniform Uniform, v gmath.Vec3) {
+func SetUniformVec3(uniform Uniform, v mgl32.Vec3) {
 	gl.Uniform3fv(int32(uniform), 1, &v[0])
 	
 }
 
-func SetUniformVec4(uniform Uniform, v gmath.Vec4) {
+func SetUniformVec4(uniform Uniform, v mgl32.Vec4) {
 	gl.Uniform4fv(int32(uniform), 1, &v[0])
 	
 }

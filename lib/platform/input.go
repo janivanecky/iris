@@ -9,6 +9,7 @@ var dmouseX, dmouseY float64 = 0.0, 0.0
 var mouseButtonDown bool = false
 var mouseButtonPressed bool = false
 var mouseWheelDelta float64 = 0.0
+var keyPressed map[glfw.Key]bool
 
 func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
 	mouseWheelDelta = yoff
@@ -16,6 +17,8 @@ func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
 
 func initInput(window *glfw.Window) {
 	window.SetScrollCallback(scrollCallback)
+
+	keyPressed = make(map[glfw.Key]bool)
 }
 
 func Update(window *glfw.Window) {
@@ -40,6 +43,19 @@ func Update(window *glfw.Window) {
 	} else {
 		mouseButtonDown = false
 	}
+
+	for key, _ := range keyPressed {
+		keyPressed[key] = false
+	}
+
+	escState := window.GetKey(glfw.KeyEscape)
+	if escState == glfw.Press {
+		keyPressed[glfw.KeyEscape] = true
+	}
+}
+
+func IsEscPressed() bool {
+	return keyPressed[glfw.KeyEscape]
 }
 
 func GetMouseDeltaPosition() (float64, float64) {

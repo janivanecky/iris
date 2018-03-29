@@ -118,6 +118,10 @@ func (font *Font)GetStringWidth(text string) float64 {
 	return width
 }
 
+func (font *Font) GetStringHeight() float64 {
+	return font.RowHeight
+}
+
 func (font *Font) GetKerning(c1 rune, c2 rune) float64 {
 	i1, i2 := font.font.Index(c1), font.font.Index(c2)
 	return float64(font.font.Kern(fixed.Int26_6(0), i1, i2).Round()) / font.scale

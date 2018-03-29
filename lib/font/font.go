@@ -1,10 +1,11 @@
 package font
 
 import (
-	"github.com/golang/freetype/truetype"
-	"golang.org/x/image/math/fixed"
-	"golang.org/x/image/font"
 	"image"
+	
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+	"github.com/golang/freetype/truetype"
 )
 
 

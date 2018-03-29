@@ -1,14 +1,16 @@
 package app
 
 import (
+	"fmt"
+	"io/ioutil"
+	"math"
+	
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/gl/v4.1-core/gl"
+
 	"../lib/font"
 	"../lib/graphics"
 	"../lib/ui"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/go-gl/gl/v4.1-core/gl"
-	"math"
-	"io/ioutil"
-	"fmt"
 )
 
 type pipelineData struct {

@@ -2,10 +2,11 @@ package ui
 
 import (
     "fmt"
-    "sort"
     "math"
+    "sort"
 
-	"github.com/go-gl/mathgl/mgl32"
+    "github.com/go-gl/mathgl/mgl32"
+
 	"../platform"
 )
 

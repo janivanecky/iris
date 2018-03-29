@@ -1,17 +1,17 @@
 package main
 
 import (
-	_ "fmt"
 	"io/ioutil"
 	"math"
 	"time"
 
+	"github.com/go-gl/mathgl/mgl32"
+	
 	"./lib/graphics"
 	"./lib/font"
 	"./lib/ui"
 	"./lib/platform"
 	"./app"
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 func vecFromPolarCoords(azimuth float64, polar float64, radius float64) mgl32.Vec3 {

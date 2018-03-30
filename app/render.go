@@ -8,9 +8,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v4.1-core/gl"
 
-	"../lib/font"
-	"../lib/graphics"
-	"../lib/ui"
+	"github.com/janivanecky/golib/font"
+	"github.com/janivanecky/golib/graphics"
+	"github.com/janivanecky/golib/ui"
 )
 
 type pipelineData struct {

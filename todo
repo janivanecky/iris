@@ -5,7 +5,6 @@ DOING
 =========================
 TODO
 =========================
-- library to different repo/folder
 - comment and clean font.go
 - comment and clean graphics.go
 - comment and clean ui.go
@@ -16,11 +15,16 @@ TODO
 - checkerboard texture
 - shader hot reloading
 - PBR shader
+- averaging fps display
 
 =========================
 DONE
 =========================
+30/03/18
+- library to different repo/folder
+
 29/03/18
+- FPS display
 - ditch math.go
 - lib files use interfaces to remove dependencies
 - clean main.go

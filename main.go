@@ -1,16 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
-	
-	"./lib/graphics"
-	"./lib/font"
-	"./lib/ui"
-	"./lib/platform"
+
+	"github.com/janivanecky/golib/graphics"
+	"github.com/janivanecky/golib/font"
+	"github.com/janivanecky/golib/ui"
+	"github.com/janivanecky/golib/platform"
 	"./app"
 )
 
@@ -56,8 +57,14 @@ func main() {
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
 		t := time.Now()
-		_ = t.Sub(start)
+		dt := t.Sub(start).Seconds()
 		start = t
+		fps := 0
+		if dt > 0.0 {
+			fps = int(1.0 / dt)
+		}
+		fpsString := fmt.Sprintf("%d", fps)
+		app.DrawText(fpsString, &uiFont, mgl32.Vec2{windowWidth, 0}, mgl32.Vec4{1,1,1,1}, mgl32.Vec2{1,0})
 
 		platform.Update(window)
 

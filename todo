@@ -5,21 +5,58 @@ DOING
 =========================
 TODO
 =========================
-- comment and clean font.go
-- comment and clean graphics.go
-- comment and clean ui.go
-- comment and clean input.go
-- comment and clean platform.go
+- find why stutters
+- save button
+- screenshot functionality
 
-- DrawMesh - position/color
+- instanced text rendering?
+- cleanup Render.go
+- cleanup main.go
+- cleanup UI.go
+
+BUGS
+- Font position
+- Banding SSAO?
+- Stutter when launching goroutine for fetching new colors
+
+MAYBE NOT?
 - checkerboard texture
 - shader hot reloading
-- PBR shader
 - averaging fps display
 
 =========================
 DONE
 =========================
+28/04/18
+- better camera movement
+- control over structure of cells
+    - repopulate
+    - radius control
+
+27/04/18
+- colors run in parallel
+- colors from generator
+
+26/04/18
+- camera top-down look solve
+
+25/04/18
+- color pallete UI
+
+24/04/18
+- replicate cubes from Draw
+
+23/04/18
+- new font
+- fix font rendering
+
+22/04/18
+- HDR rendering
+- color UI element
+
+21/04/18
+- full pipeline
+
 30/03/18
 - library to different repo/folder
 

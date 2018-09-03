@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"io/ioutil"
 	
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/janivanecky/golib/graphics"
@@ -56,8 +57,40 @@ func InitPipeline(vertexShaderFile, pixelShaderFile string) Pipeline {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var pipeline Pipeline
-	pipeline.program = program
-	pipeline.uniforms = make(map[string]graphics.Uniform)
-	return pipeline
+	return Pipeline{program, make(map[string]graphics.Uniform)}
+}
+
+func getProgram(vertexShaderPath string, pixelShaderPath string) (graphics.Program, error) {
+	vertexShaderData, err := ioutil.ReadFile(vertexShaderPath)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+	
+	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	pixelShaderData, err := ioutil.ReadFile(pixelShaderPath)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+
+	program, err := graphics.GetProgram(vertexShader, pixelShader)
+	if err != nil {
+		fmt.Println(err)
+		return graphics.Program(0), err
+	}
+	graphics.ReleaseShaders(vertexShader, pixelShader)
+	
+	return program, nil
 }

@@ -15,50 +15,34 @@ type textData struct {
 	color mgl32.Vec4
 	origin mgl32.Vec2
 }
-var textEntities []textData
 
 type meshData struct {
 	mesh graphics.Mesh
 	modelMatrix mgl32.Mat4
 	color mgl32.Vec4
 }
-var meshEntities []meshData
 
 type rectData struct {
 	position mgl32.Vec2
 	size mgl32.Vec2
 	color mgl32.Vec4
 }
+
+var meshEntities []meshData
 var rectEntities []rectData
-
-var screenWidth float64
-var screenHeight float64
-
-var Roughness = 1.0
-var Reflectivity = 0.05
-var SSAORadius = 0.5
-var SSAORange = 3.0
-var SSAOBoundary = 1.0
-var Color = mgl32.Vec4{1,1,0,1};
-var DirectLight = 0.5
-var AmbientLight = 0.75
-var MinWhite = 8.0
+var textEntities []textData
 
 var screenBuffer graphics.Framebuffer
 
-func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font) {
+func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, uiFontTitle font.Font) {
 	// Set up libraries
 	graphics.Init()
-	ui.Init(windowWidth, windowHeight, &uiFont)
+	ui.Init(windowWidth, windowHeight, &uiFont, &uiFontTitle)
 
 	// Set up entity rendering lists
 	rectEntities = make([]rectData, 0, 100)
 	textEntities = make([]textData, 0, 100)
 	meshEntities = make([]meshData, 0, 100)
-
-	// Fetch screen size
-	screenWidth = windowWidth
-	screenHeight = windowHeight
 
 	initSceneRendering(windowWidth, windowHeight)
 	initUIRendering(uiFont, windowWidth, windowHeight)
@@ -68,8 +52,20 @@ func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font) 
 }
 
 func Render() {
-	renderScene(screenBuffer)
-	renderUI(screenBuffer)
+	renderScene(screenBuffer, meshEntities)
+	
+	// Get UI rendering buffers
+	rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
+	for _, rect := range rectRenderingBuffer {
+		rectEntities = append(rectEntities, rectData{rect.Position, rect.Size, rect.Color})
+	}
+
+	for _, text := range textRenderingBuffer {
+		font := (*text.Font).(*font.Font)
+		textEntities = append(textEntities, textData{font, text.Text, text.Position, text.Color, text.Origin})
+	}
+	
+	renderUI(screenBuffer, textEntities, rectEntities)
 	
 	// Clear rendering lists + UI
 	rectEntities = rectEntities[:0]
@@ -79,9 +75,12 @@ func Render() {
 	ui.Clear()
 }
 
-func SetCameraPosition(position mgl32.Vec3, up mgl32.Vec3) {
-	sceneData.cameraPosition = position
-	sceneData.viewMatrix = mgl32.LookAtV(position, mgl32.Vec3{}, up)
+func SetCamera(camera *Camera) {
+	position := camera.GetPosition()
+	target := camera.GetTarget()
+	up := camera.GetUp()
+	sceneCameraPosition = position.Add(target)
+	sceneViewMatrix = mgl32.LookAtV(position.Add(target), target, up)
 }
 
 func DrawMesh(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {

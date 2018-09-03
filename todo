@@ -1,32 +1,84 @@
 =========================
 DOING
 =========================
+- github repo
 
 =========================
 TODO
 =========================
-- find why stutters
-- save button
-- screenshot functionality
-
-- instanced text rendering?
-- cleanup Render.go
+MAINTENANCE
+- remove global states?
+- parser return error instead of just nil?
 - cleanup main.go
+- cleanup shaders
 - cleanup UI.go
 
-BUGS
-- Font position
+FEATURES
+- disable advanced
+- disable sliders
+- save button
+- screenshot in 4k
+- screenshot effect? (flash)
+- better settings saving - save button / reset to default buttons / save as button?
+- autogenerate UI for settings
+
+NEEDS FIX
 - Banding SSAO?
 - Stutter when launching goroutine for fetching new colors
 
 MAYBE NOT?
-- checkerboard texture
-- shader hot reloading
+- instanced text rendering?
 - averaging fps display
 
 =========================
 DONE
 =========================
+03/09/18
+- change min + radius to min and max
+- correct radius positioning
+
+02/09/18
+- Font position
+- Direct radius control
+
+31/05/18
+- fancier UI
+
+30/05/18
+- add text when screenshot is taken "screenshot 0 taken"
+- save functionality
+
+24/05/18
+- screenshot functionality
+
+08/05/18
+- ui textfield sliding window when going outside of boundaries
+
+06/05/18
+- UI label is concatenated with panel name for ID
+- parsing doesn't panic when failed, instead returns nil
+
+05/05/18
+- add colors to settings
+- add camera settings to settings struct
+- serialize struct
+- deserialize struct
+- hook up settings struct to renderer
+- hook up settings struct to UI
+- settings struct
+
+04/05/18
+- ui textfield label
+- ui textfield home/end
+- ui textfield don't catch all the input when active
+- platform option for full screen
+
+30/04/18
+- cleanup app/
+
+29/04/18
+- cleanup Render.go
+
 28/04/18
 - better camera movement
 - control over structure of cells

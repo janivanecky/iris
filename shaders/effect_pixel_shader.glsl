@@ -15,9 +15,11 @@ void main()
     out_color.b = b;
 
     vec2 pos = texcoord * 2.0 - 1.0;
-	float d = length(pos * pos * pos);
+	//float d = length(pos * pos * pos);
+    float d = length(pos);// * pos);
 
     out_color = clamp(out_color, 0, 1);
 	out_color = pow(out_color, vec4(1/2.2f));
-	out_color -= d * 0.5f;
+	out_color -= d * 0.1f;
+    out_color.a = 1.0;
 }

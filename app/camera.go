@@ -43,7 +43,7 @@ func (cam *Camera) Update(dt float64) {
 
 	// Update mouse position and get position delta.
 	dx, dy := platform.GetMouseDeltaPosition()
-	if !ui.IsRegisteringInput {
+	if !ui.IsRegisteringInput && platform.IsKeyDown(platform.KeyLeftAlt) {
 		if platform.IsMouseLeftButtonDown() {
 			cam.dAzimuth -= dx / 100.0
 			cam.dPolar -= dy / 100.0

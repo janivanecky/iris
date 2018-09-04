@@ -161,18 +161,20 @@ func saveSettings() {
 	}
 }
 
-func getCircle(radius float64) ([]float32, []uint32) {
+func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32) {
 	pointCount := uint32(128)
 
 	vertices := make([]float32, 0)
 	indices := make([]uint32, 0)
 
+	archLength := math.Pi / 4.0
 	for i := uint32(0); i < pointCount; i++ {
-		angle := float64(i) * math.Pi * 2.0 / float64(pointCount)
-		xInner := float32(math.Sin(angle) * (radius - 0.5))
-		zInner := float32(math.Cos(angle) * (radius - 0.5))
-		xOuter := float32(math.Sin(angle) * (radius + 0.5))
-		zOuter := float32(math.Cos(angle) * (radius + 0.5))
+		//angle := float64(i) * math.Pi * 2.0 / float64(pointCount)
+		angle := float64(i) * archLength / float64(pointCount) + arch - archLength / 2.0
+		xInner := float32(math.Sin(angle) * (radius - width))
+		zInner := float32(math.Cos(angle) * (radius - width))
+		xOuter := float32(math.Sin(angle) * (radius + width))
+		zOuter := float32(math.Cos(angle) * (radius + width))
 		y := float32(0.0)
 
 		vertices = append(vertices, xInner, y, zInner, 1.0)
@@ -185,12 +187,90 @@ func getCircle(radius float64) ([]float32, []uint32) {
 			indices = append(indices, index, index+1, index+3)
 			indices = append(indices, index, index+3, index+2)
 		} else {
-			indices = append(indices, index, index+1, 1)
-			indices = append(indices, index, 1, 0)
+			//indices = append(indices, index, index+1, 1)
+			//indices = append(indices, index, 1, 0)
 		}
 	}
 
 	return vertices, indices
+}
+
+type Circle struct {
+	color mgl32.Vec4
+	targetColor mgl32.Vec4
+	width float64
+	targetWidth float64
+	radius float64
+	targetRadius float64
+	arch float64
+	targetArch float64
+}
+
+func (c *Circle) getRadialDistanceToInnerCircle(radius float64) float64 {
+	return math.Abs(radius - (c.radius - 4.0))
+}
+
+func (c *Circle) getRadialDistanceToOuterCircle(radius float64) float64 {
+	return math.Abs(radius - (c.radius + 4.0))
+}
+
+func (c *Circle) getAsInnerCircle() ([]float32, []uint32) {
+	radius := c.radius - 4.0
+	circleVertices, circleIndices := getCircle(radius, c.width, c.arch)
+	return circleVertices, circleIndices
+}
+
+func (c *Circle) getAsOuterCircle() ([]float32, []uint32) {
+	radius := c.radius + 4.0
+	circleVertices, circleIndices := getCircle(radius, c.width, c.arch)
+	return circleVertices, circleIndices
+}
+
+func (c *Circle) setWidth(targetWidth float64) {
+	c.targetWidth = targetWidth
+}
+
+func (c *Circle) setRadius(targetRadius float64) {
+	c.targetRadius = targetRadius
+}
+
+func (c *Circle) setColor(targetColor mgl32.Vec4) {
+	c.targetColor = targetColor
+}
+
+func (c *Circle) setArch(targetArch float64) {
+	if targetArch - c.arch > math.Pi {
+		targetArch -= math.Pi * 2.0
+	} else if c.arch - targetArch > math.Pi {
+		targetArch += math.Pi * 2.0
+	}
+	c.targetArch = targetArch
+}
+
+func (c *Circle) update(dt float64) {
+	c.width += (c.targetWidth - c.width) * 10.0 * dt
+	c.radius += (c.targetRadius - c.radius) * 15.0 * dt
+	c.color[0] += (c.targetColor[0] - c.color[0]) * 5.0 * float32(dt)
+	c.color[1] += (c.targetColor[1] - c.color[1]) * 5.0 * float32(dt)
+	c.color[2] += (c.targetColor[2] - c.color[2]) * 5.0 * float32(dt)
+	c.color[3] += (c.targetColor[3] - c.color[3]) * 5.0 * float32(dt)
+	c.arch += (c.targetArch - c.arch) * math.Pi * 6.0 * dt
+	if c.arch > math.Pi * 2.0 && c.targetArch > math.Pi * 2.0 {
+		c.arch -= math.Pi * 2.0
+		c.targetArch -= math.Pi * 2.0
+	}
+	if c.arch < 0 && c.targetArch < 0 {
+		c.arch += math.Pi * 2.0
+		c.targetArch += math.Pi * 2.0
+	}
+}
+
+func radiusToRadiusMin(radius float64) float64 {
+	return radius + 4.0
+}
+
+func radiusToRadiusMax(radius float64) float64 {
+	return radius - 4.0
 }
 
 func main() {
@@ -239,12 +319,22 @@ func main() {
 	colorChannel := make(chan []mgl32.Vec4, 1)
 
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
-	cells := make([]cell, 4400)
+	cells := make([]cell, 10000)
+	cellCount := 5000
 	generateCells(cells)
 
-	circleVertices, circleIndices := getCircle(settings.Cells.RadiusMin - 2.0)
+	circleWidth := 0.75
+	circleWidthHover := 1.5
+	circleColor := mgl32.Vec4{0.0, 0.0, 0.0, 0.2}
+	circleColorHover := mgl32.Vec4{0.0, 0.0, 0.0, 0.5}
+	circleColorFade := mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
+	circleFadeOutTime := 0.5
+	
+	innerCircle := Circle{circleColor, circleColor, circleWidth, circleWidth, settings.Cells.RadiusMin, settings.Cells.RadiusMin, 0, 0}
+	circleVertices, circleIndices := innerCircle.getAsInnerCircle()
 	circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-	circleVertices, circleIndices = getCircle(settings.Cells.RadiusMax + 2.0)
+	outerCircle := Circle{circleColor, circleColor, circleWidth, circleWidth, settings.Cells.RadiusMax, settings.Cells.RadiusMax, 0, 0}
+	circleVertices, circleIndices = outerCircle.getAsOuterCircle()
 	circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 	
 	pickerStates := make([]bool, len(settings.Colors))
@@ -268,6 +358,8 @@ func main() {
 
 	circleInnerChanging := false
 	circleOuterChanging := false
+
+	timeSinceMouseMovement := 0.0
 
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
@@ -327,40 +419,45 @@ func main() {
 		}
 
 		if showUI {
-			// Scene control.
-			panel := ui.StartPanel("Scene", mgl32.Vec2{10, 10}, 450)
-			radiusMinChanged, radiusMaxChanged := false, false
-			settings.Cells.RadiusMin, radiusMinChanged = panel.AddSlider("RadiusMin", settings.Cells.RadiusMin, 0, 100.0)
-			if radiusMinChanged {
-				circleVertices, circleIndices := getCircle(settings.Cells.RadiusMin - 2.0)
-				circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+			if false {
+				// Scene control.
+				panel := ui.StartPanel("Scene", mgl32.Vec2{10, 10}, 450)
+				radiusMinChanged, radiusMaxChanged := false, false
+				settings.Cells.RadiusMin, radiusMinChanged = panel.AddSlider("RadiusMin", settings.Cells.RadiusMin, 0, 100.0)
+				if radiusMinChanged {
+					circleVertices, circleIndices := getCircle(settings.Cells.RadiusMin - 2.0, circleWidth, 0.0)
+					circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+				}
+				settings.Cells.RadiusMax, radiusMaxChanged = panel.AddSlider("RadiusMax", settings.Cells.RadiusMax, 0, 100.0)
+				if radiusMaxChanged {
+					circleVertices, circleIndices := getCircle(settings.Cells.RadiusMax + 2.0 + circleWidth, circleWidth, 0.0)
+					circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+				}
+				settings.Cells.PolarStd, _ = panel.AddSlider("PolarStd", settings.Cells.PolarStd, 0, math.Pi)
+				settings.Cells.HeightRatio, _ = panel.AddSlider("HeightRatio", settings.Cells.HeightRatio, 0, 1.0)
+	
+				panel.End()
+				panel = ui.StartPanel("Advanced", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
+				advancedCellControl, _ = panel.AddToggle("Active", advancedCellControl)
+				settings.CellsAdvanced.RadiusMin, _ = panel.AddTextField("RadiusMin", settings.CellsAdvanced.RadiusMin)
+				newExpression := app.Parse(settings.CellsAdvanced.RadiusMin)
+				if newExpression != nil {
+					activeSettingsExpression["RadiusMin"] = newExpression
+				}
+				settings.CellsAdvanced.HeightRatio, _ = panel.AddTextField("HeightRatio", settings.CellsAdvanced.HeightRatio)
+				newExpression = app.Parse(settings.CellsAdvanced.HeightRatio)
+				if newExpression != nil {
+					activeSettingsExpression["HeightRatio"] = newExpression
+				}
+				settings.CellsAdvanced.CycleLength, _ = panel.AddSlider("CycleLength", settings.CellsAdvanced.CycleLength, 0, 10.0)
+				panel.End()
 			}
-			settings.Cells.RadiusMax, radiusMaxChanged = panel.AddSlider("RadiusMax", settings.Cells.RadiusMax, 0, 100.0)
-			if radiusMaxChanged {
-				circleVertices, circleIndices := getCircle(settings.Cells.RadiusMax + 2.0)
-				circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-			}
-			settings.Cells.PolarStd, _ = panel.AddSlider("PolarStd", settings.Cells.PolarStd, 0, math.Pi)
-			settings.Cells.HeightRatio, _ = panel.AddSlider("HeightRatio", settings.Cells.HeightRatio, 0, 1.0)
-
-			panel.End()
-			panel = ui.StartPanel("Advanced", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
-			advancedCellControl, _ = panel.AddToggle("Active", advancedCellControl)
-			settings.CellsAdvanced.RadiusMin, _ = panel.AddTextField("RadiusMin", settings.CellsAdvanced.RadiusMin)
-			newExpression := app.Parse(settings.CellsAdvanced.RadiusMin)
-			if newExpression != nil {
-				activeSettingsExpression["RadiusMin"] = newExpression
-			}
-			settings.CellsAdvanced.HeightRatio, _ = panel.AddTextField("HeightRatio", settings.CellsAdvanced.HeightRatio)
-			newExpression = app.Parse(settings.CellsAdvanced.HeightRatio)
-			if newExpression != nil {
-				activeSettingsExpression["HeightRatio"] = newExpression
-			}
-			settings.CellsAdvanced.CycleLength, _ = panel.AddSlider("CycleLength", settings.CellsAdvanced.CycleLength, 0, 10.0)
-			panel.End()
 
 			// SSAO related settings.
-			panel = ui.StartPanel("Rendering", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
+			//panel = ui.StartPanel("Rendering", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
+			panel := ui.StartPanel("Rendering", mgl32.Vec2{10, 10}, 450)
+			cellCountFloat, _ := panel.AddSlider("CellCount", float64(cellCount), 0, 10000)
+			cellCount = int(cellCountFloat)
 			settings.Rendering.DirectLight, _ = panel.AddSlider("DirectLight", settings.Rendering.DirectLight, 0, 5.0)
 			settings.Rendering.AmbientLight, _ = panel.AddSlider("AmbientLight", settings.Rendering.AmbientLight, 0, 5.0)
 			settings.Rendering.MinWhite, _ = panel.AddSlider("MinWhite", settings.Rendering.MinWhite, 0, 20.0)
@@ -406,8 +503,77 @@ func main() {
 			t = 0.0
 		}
 
-		//settings.Camera.Update(dt)
+		settings.Camera.Update(dt)
 		app.SetCamera(&settings.Camera)
+
+		
+		
+		mouseX, mouseY := platform.GetMousePosition()
+		rS, rD := app.GetWorldRay(mouseX, mouseY)
+		s := 0.0 - rS.Y() / rD.Y()
+		pos := rS.Add(rD.Mul(s))
+		radius := math.Sqrt(float64(pos.X() * pos.X() + pos.Z() * pos.Z()))
+		
+		mdx, mdy := platform.GetMouseDeltaPosition()
+		if math.Abs(mdx) < 0.001 && math.Abs(mdy) < 0.001 {
+			timeSinceMouseMovement += dt
+		} else {
+			timeSinceMouseMovement = 0.0
+		}
+
+		if circleInnerChanging {
+			if !platform.IsMouseLeftButtonDown() {
+				circleInnerChanging = false
+				innerCircle.setColor(circleColor)
+				innerCircle.setWidth(circleWidth)
+			}
+			innerCircle.setRadius(radiusToRadiusMin(radius))
+		}
+		if !circleInnerChanging {
+			if innerCircle.getRadialDistanceToInnerCircle(radius) < 4.0{
+				innerCircle.setColor(circleColorHover)
+				innerCircle.setWidth(circleWidthHover)
+				if  platform.IsMouseLeftButtonPressed() { 
+					circleInnerChanging = true
+				}
+			}  else {
+				if timeSinceMouseMovement > circleFadeOutTime {
+					innerCircle.setColor(circleColorFade)
+				} else {
+					innerCircle.setColor(circleColor)
+				}
+				innerCircle.setWidth(circleWidth)
+			}
+		}
+		settings.Cells.RadiusMin = innerCircle.radius
+		innerCircle.update(dt)
+		
+		if circleOuterChanging {
+			if !platform.IsMouseLeftButtonDown() {
+				circleOuterChanging = false
+				outerCircle.setColor(circleColor)
+				outerCircle.setWidth(circleWidth)
+			}
+			outerCircle.setRadius(radiusToRadiusMax(radius))
+		}
+		if !circleOuterChanging {
+			if outerCircle.getRadialDistanceToOuterCircle(radius) < 4.0 {
+				outerCircle.setColor(circleColorHover)
+				outerCircle.setWidth(circleWidthHover)
+				if platform.IsMouseLeftButtonPressed() {
+					circleOuterChanging = true
+				}
+			} else {
+				if timeSinceMouseMovement > circleFadeOutTime {
+					outerCircle.setColor(circleColorFade)
+				} else {
+					outerCircle.setColor(circleColor)
+				}
+				outerCircle.setWidth(circleWidth)
+			}
+		}
+		outerCircle.update(dt)
+		settings.Cells.RadiusMax = outerCircle.radius
 
 		app.DirectLight = settings.Rendering.DirectLight
 		app.AmbientLight = settings.Rendering.AmbientLight
@@ -432,7 +598,7 @@ func main() {
 			radiusMin = activeSettingsExpression["RadiusMin"].Eval(map[string]float64{"t": t})
 			heightRatio = activeSettingsExpression["HeightRatio"].Eval(map[string]float64{"t": t})
 		}
-		for _, cell := range cells {
+		for _, cell := range cells[:cellCount] {
 			color := settings.Colors[cell.colorIndex].Mul(cell.colorModifier)
 
 			polar := cell.polar*polarStd + polarMean
@@ -454,52 +620,20 @@ func main() {
 
 			app.DrawMesh(cube, modelMatrix, color)
 		}
-		mouseX, mouseY := platform.GetMousePosition()
-		rS, rD := app.GetWorldRay(mouseX, mouseY)
 
-		s := 0.0 - rS.Y() / rD.Y()
-		pos := rS.Add(rD.Mul(s))
-		radius := math.Sqrt(float64(pos.X() * pos.X() + pos.Z() * pos.Z()))
-		
-		color := mgl32.Vec4{0.4, 0.4, 0.4,1}
-		if math.Abs(radius - (radiusMin - 2.0)) < 1.0 {
-			color = mgl32.Vec4{0.0, 0.0, 0.0,1}
-			if  platform.IsMouseLeftButtonPressed() { 
-				circleInnerChanging = true
-			} 
-		}
-		if circleInnerChanging {
-			if !platform.IsMouseLeftButtonDown() {
-				circleInnerChanging = false
-			}
-			color = mgl32.Vec4{0.0, 0.0, 0.0,1}
-			settings.Cells.RadiusMin = radius + 2.0
-			circleVertices, circleIndices := getCircle(settings.Cells.RadiusMin - 2.0)
-			circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-		}
+		mouseAngle := math.Atan2(float64(pos.X()), float64(pos.Z()))
+		innerCircle.setArch(mouseAngle)
+		outerCircle.setArch(mouseAngle)
+		circleVertices, circleIndices := innerCircle.getAsInnerCircle()
+		circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+
 		modelMatrix := mgl32.Ident4()
-		app.DrawMesh(circleInner, modelMatrix, color)
+		app.DrawMeshUI(circleInner, modelMatrix, innerCircle.color)
 
-		color = mgl32.Vec4{0.4, 0.4, 0.4,1}
-		if math.Abs(radius - (radiusMax + 2.0)) < 2.0 {
-			color = mgl32.Vec4{0.0, 0.0, 0.0,1}
-			if platform.IsMouseLeftButtonPressed() {
-				circleOuterChanging = true
-			}
-		}
-
-		if circleOuterChanging {
-			if !platform.IsMouseLeftButtonDown() {
-				circleOuterChanging = false
-			}
-			color = mgl32.Vec4{0.0, 0.0, 0.0,1}
-			settings.Cells.RadiusMax = radius - 2.0
-
-			circleVertices, circleIndices = getCircle(settings.Cells.RadiusMax + 2.0)
-			circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-		}
+		circleVertices, circleIndices = outerCircle.getAsOuterCircle()
+		circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 		
-		app.DrawMesh(circleOuter, modelMatrix, color)
+		app.DrawMeshUI(circleOuter, modelMatrix, outerCircle.color)
 		app.Render()
 
 		// Swappity-swap.

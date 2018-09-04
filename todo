@@ -1,7 +1,6 @@
 =========================
 DOING
 =========================
-- github repo
 
 =========================
 TODO
@@ -14,13 +13,19 @@ MAINTENANCE
 - cleanup UI.go
 
 FEATURES
-- disable advanced
-- disable sliders
+- better control for cube number
+- circle uses depth buffer
+
+- keyboard control for max-min radius
+- keyboard control for cube number
+
 - save button
 - screenshot in 4k
 - screenshot effect? (flash)
 - better settings saving - save button / reset to default buttons / save as button?
 - autogenerate UI for settings
+
+- optimize circle generation, so we don't have to re-generate/re-allocate that often
 
 NEEDS FIX
 - Banding SSAO?
@@ -34,6 +39,17 @@ MAYBE NOT?
 DONE
 =========================
 03/09/18
+- add control for number of cubes
+- notch position smooth
+- add notch to circle
+- circles are not rendered in scene, but in different pass
+- camera control when holding some button
+- more responsive circle controls
+- circle controls fade when not moving mouse
+- less intrusive circle controls
+- smooth change in radius for circles
+- disable advanced
+- disable sliders
 - change min + radius to min and max
 - correct radius positioning
 

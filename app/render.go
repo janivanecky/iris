@@ -29,6 +29,7 @@ type rectData struct {
 }
 
 var meshEntities []meshData
+var meshEntitiesUI []meshData
 var rectEntities []rectData
 var textEntities []textData
 
@@ -43,6 +44,7 @@ func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, 
 	rectEntities = make([]rectData, 0, 100)
 	textEntities = make([]textData, 0, 100)
 	meshEntities = make([]meshData, 0, 100)
+	meshEntitiesUI = make([]meshData, 0, 100)
 
 	initSceneRendering(windowWidth, windowHeight)
 	initUIRendering(uiFont, windowWidth, windowHeight)
@@ -52,7 +54,7 @@ func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, 
 }
 
 func Render() {
-	renderScene(screenBuffer, meshEntities)
+	renderScene(screenBuffer, meshEntities, meshEntitiesUI)
 	
 	// Get UI rendering buffers
 	rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
@@ -70,6 +72,7 @@ func Render() {
 	// Clear rendering lists + UI
 	rectEntities = rectEntities[:0]
 	meshEntities = meshEntities[:0]
+	meshEntitiesUI = meshEntitiesUI[:0]
 	textEntities = textEntities[:0]
 	
 	ui.Clear()
@@ -85,6 +88,10 @@ func SetCamera(camera *Camera) {
 
 func DrawMesh(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
 	meshEntities = append(meshEntities, meshData{mesh, modelMatrix, color})
+}
+
+func DrawMeshUI(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
+	meshEntitiesUI = append(meshEntitiesUI, meshData{mesh, modelMatrix, color})
 }
 
 func DrawRect(pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {

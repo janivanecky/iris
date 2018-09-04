@@ -19,6 +19,7 @@ var pipelineBlur Pipeline
 var pipelineBlit Pipeline
 var pipelineShading Pipeline
 var pipelineEffect Pipeline
+var pipelineUI Pipeline
 
 // Framebuffers used for 3D scene rendering.
 var bufferGeometry graphics.Framebuffer
@@ -65,6 +66,7 @@ func initSceneRendering(windowWidth, windowHeight float64) {
 	pipelineEffect = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/effect_pixel_shader.glsl")
 	pipelineShading = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/shading_pixel_shader.glsl")
 	pipelineSSAO = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/ssao_pixel_shader.glsl")
+	pipelineUI = InitPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
 
 	// Set up framebuffers for rendering.
 	backbufferWidth, backbufferHeight := windowWidth, windowHeight
@@ -118,7 +120,7 @@ func initSceneRendering(windowWidth, windowHeight float64) {
 	screenWidth, screenHeight = windowWidth, windowHeight
 }
 
-func renderScene(targetBuffer graphics.Framebuffer, meshEntities []meshData) {
+func renderScene(targetBuffer graphics.Framebuffer, meshEntities []meshData, meshEntitiesUI []meshData) {
 	bgColor := float32(0.9)
 	// Set up 3D rendering settings - no blending and depth test.
 	graphics.DisableBlending()
@@ -222,6 +224,16 @@ func renderScene(targetBuffer graphics.Framebuffer, meshEntities []meshData) {
 	pipelineBlit.Start()
 	
 	graphics.DrawMesh(screenQuad)
+
+	// Draw in-scene UI on top
+	graphics.EnableBlending()
+	graphics.DisableDepthTest()
+	pipelineUI.Start()
+	pipelineUI.SetUniform("projection_matrix", sceneProjectionMatrix)
+	pipelineUI.SetUniform("view_matrix", sceneViewMatrix)
+	for _, meshEntity := range meshEntitiesUI {
+		drawMesh(pipelineUI, meshEntity.mesh, meshEntity.modelMatrix, meshEntity.color)
+	}
 }
 
 func drawMesh(pipeline Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {

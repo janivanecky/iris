@@ -1,30 +1,31 @@
 =========================
 DOING
 =========================
+- cleanup main.go
 
 =========================
-TODO
+TODOe
 =========================
 MAINTENANCE
+- do app specific UI properly
+- remove unused functionality
 - remove global states?
 - parser return error instead of just nil?
-- cleanup main.go
 - cleanup shaders
 - cleanup UI.go
 
 FEATURES
-- better control for cube number
-- circle uses depth buffer
-
-- keyboard control for max-min radius
-- keyboard control for cube number
-
+- save command (F11)
+- load/save bar on the left
+- load/save bar displaying settings
 - save button
 - screenshot in 4k
 - screenshot effect? (flash)
 - better settings saving - save button / reset to default buttons / save as button?
 - autogenerate UI for settings
-
+- UI for selecting colors
+- circle uses depth buffer
+- rotation of the whole thing?
 - optimize circle generation, so we don't have to re-generate/re-allocate that often
 
 NEEDS FIX
@@ -38,7 +39,11 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+04/09/18
+- radiusMax must be > radiusMIn
+
 03/09/18
+- better control for cube number - big slider
 - add control for number of cubes
 - notch position smooth
 - add notch to circle

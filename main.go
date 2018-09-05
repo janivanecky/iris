@@ -60,6 +60,7 @@ type CellSettings struct {
 	PolarStd, PolarMean    float64
 	RadiusMin, RadiusMax float64
 	HeightRatio            float64
+	Count				   int
 }
 
 type CellSettingsDynamic struct {
@@ -79,9 +80,10 @@ type AppSettings struct {
 
 var settings = AppSettings{
 	Cells: CellSettings{
-		PolarStd: 0.4, PolarMean: math.Pi / 2.0,
+		PolarStd: 0.00, PolarMean: math.Pi / 2.0,
 		RadiusMin: 3.0, RadiusMax: 6.0,
-		HeightRatio: 0.25,
+		HeightRatio: 1.0,
+		Count: 5000,
 	},
 
 	CellsAdvanced: CellSettingsDynamic{
@@ -139,10 +141,11 @@ func generateCells(cells []cell) {
 	}
 }
 
+var SAVES_DIR = "saves"
 func loadSettings() {
-	serializedSettings, err := ioutil.ReadFile("settings")
+	serializedSettings, err := ioutil.ReadFile(SAVES_DIR + "/settings")
 	if err != nil {
-		panic(err)
+		return//panic(err)
 	}
 	err = json.Unmarshal(serializedSettings, &settings)
 	if err != nil {
@@ -155,7 +158,7 @@ func saveSettings() {
 	if err != nil {
 		panic(err)
 	}
-	err = ioutil.WriteFile("settings", serializedSettings, 0644)
+	err = ioutil.WriteFile(SAVES_DIR + "/settings", serializedSettings, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -273,6 +276,14 @@ func radiusToRadiusMax(radius float64) float64 {
 	return radius - 4.0
 }
 
+func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2) bool {
+    if position[0] >= rectPosition[0] && position[0] <= rectPosition[0] + rectSize[0] &&
+       position[1] >= rectPosition[1] && position[1] <= rectPosition[1] + rectSize[1] {
+		   return true
+	   }
+    return false
+}
+
 func main() {
 	loadSettings()
 	var windowWidth = 800
@@ -294,6 +305,10 @@ func main() {
 			maxScreenshotNum = fileNum
 		}
 	}
+
+	// Create save dir
+	os.Mkdir(SAVES_DIR, os.ModeDir)
+	files, err = ioutil.ReadDir(SAVES_DIR)
 
 	//truetypeBytes, err := ioutil.ReadFile("fonts/DidactGothic-Regular.ttf")
 	//truetypeBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
@@ -320,7 +335,6 @@ func main() {
 
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
 	cells := make([]cell, 10000)
-	cellCount := 5000
 	generateCells(cells)
 
 	circleWidth := 0.75
@@ -360,6 +374,10 @@ func main() {
 	circleOuterChanging := false
 
 	timeSinceMouseMovement := 0.0
+
+	countSliderColor := circleColor
+	countSliderColorTarget := circleColor
+	countSliderChanging := false
 
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
@@ -456,8 +474,8 @@ func main() {
 			// SSAO related settings.
 			//panel = ui.StartPanel("Rendering", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
 			panel := ui.StartPanel("Rendering", mgl32.Vec2{10, 10}, 450)
-			cellCountFloat, _ := panel.AddSlider("CellCount", float64(cellCount), 0, 10000)
-			cellCount = int(cellCountFloat)
+			cellCountFloat, _ := panel.AddSlider("CellCount", float64(settings.Cells.Count), 0, 10000)
+			settings.Cells.Count = int(cellCountFloat)
 			settings.Rendering.DirectLight, _ = panel.AddSlider("DirectLight", settings.Rendering.DirectLight, 0, 5.0)
 			settings.Rendering.AmbientLight, _ = panel.AddSlider("AmbientLight", settings.Rendering.AmbientLight, 0, 5.0)
 			settings.Rendering.MinWhite, _ = panel.AddSlider("MinWhite", settings.Rendering.MinWhite, 0, 20.0)
@@ -527,7 +545,8 @@ func main() {
 				innerCircle.setColor(circleColor)
 				innerCircle.setWidth(circleWidth)
 			}
-			innerCircle.setRadius(radiusToRadiusMin(radius))
+			newRadius := math.Min(radiusToRadiusMin(radius), outerCircle.targetRadius)
+			innerCircle.setRadius(newRadius)
 		}
 		if !circleInnerChanging {
 			if innerCircle.getRadialDistanceToInnerCircle(radius) < 4.0{
@@ -554,7 +573,8 @@ func main() {
 				outerCircle.setColor(circleColor)
 				outerCircle.setWidth(circleWidth)
 			}
-			outerCircle.setRadius(radiusToRadiusMax(radius))
+			newRadius := math.Max(radiusToRadiusMax(radius), innerCircle.targetRadius)
+			outerCircle.setRadius(newRadius)
 		}
 		if !circleOuterChanging {
 			if outerCircle.getRadialDistanceToOuterCircle(radius) < 4.0 {
@@ -574,6 +594,53 @@ func main() {
 		}
 		outerCircle.update(dt)
 		settings.Cells.RadiusMax = outerCircle.radius
+
+		//
+		countSliderWidth := float32(100.0)
+		countSliderBgSize := mgl32.Vec2{countSliderWidth, float32(windowHeight) * 0.7}
+		countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 100, float32(windowHeight) * 0.15}
+		
+		
+		portion := float32(settings.Cells.Count) / 10000.0
+		if countSliderChanging {
+			portion = 1.0 - (float32(mouseY) - countSliderBgPos[1]) / countSliderBgSize[1]
+			if portion < 0.0 {
+				portion = 0.0
+			} else if portion > 1.0 {
+				portion = 1.0
+			}
+			settings.Cells.Count = int(portion * 10000.0)
+			countSliderColorTarget = circleColorHover
+			if !platform.IsMouseLeftButtonDown() {
+				countSliderChanging = false
+			}
+		}
+		if !countSliderChanging {
+			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, countSliderBgPos, countSliderBgSize) {
+				countSliderColorTarget = circleColorHover
+				if platform.IsMouseLeftButtonPressed() {
+					countSliderChanging = true
+				}
+			} else {
+				countSliderColorTarget = circleColor
+				if timeSinceMouseMovement > circleFadeOutTime {
+					countSliderColorTarget = circleColorFade
+				}
+			}
+		}
+			
+		countSliderSize := mgl32.Vec2{countSliderWidth, countSliderBgSize[1] * portion}
+		countSliderPos := mgl32.Vec2{countSliderBgPos[0], countSliderBgPos[1] + countSliderBgSize[1] - countSliderSize[1]}
+
+		countSliderColor[0] += (countSliderColorTarget[0] - countSliderColor[0]) * 5.0 * float32(dt)
+		countSliderColor[1] += (countSliderColorTarget[1] - countSliderColor[1]) * 5.0 * float32(dt)
+		countSliderColor[2] += (countSliderColorTarget[2] - countSliderColor[2]) * 5.0 * float32(dt)
+		countSliderColor[3] += (countSliderColorTarget[3] - countSliderColor[3]) * 5.0 * float32(dt)
+
+		app.DrawRect(countSliderBgPos, countSliderBgSize, countSliderColor)
+		app.DrawRect(countSliderPos, countSliderSize, countSliderColor)
+		
+		//
 
 		app.DirectLight = settings.Rendering.DirectLight
 		app.AmbientLight = settings.Rendering.AmbientLight
@@ -598,7 +665,7 @@ func main() {
 			radiusMin = activeSettingsExpression["RadiusMin"].Eval(map[string]float64{"t": t})
 			heightRatio = activeSettingsExpression["HeightRatio"].Eval(map[string]float64{"t": t})
 		}
-		for _, cell := range cells[:cellCount] {
+		for _, cell := range cells[:settings.Cells.Count] {
 			color := settings.Colors[cell.colorIndex].Mul(cell.colorModifier)
 
 			polar := cell.polar*polarStd + polarMean

@@ -63,16 +63,8 @@ type CellSettings struct {
 	Count				   int
 }
 
-type CellSettingsDynamic struct {
-	PolarStd, PolarMean    string
-	RadiusMin, RadiusMax string
-	HeightRatio            string
-	CycleLength            float64
-}
-
 type AppSettings struct {
 	Cells         CellSettings
-	CellsAdvanced CellSettingsDynamic
 	Rendering     RenderingSettings
 	Camera        app.Camera
 	Colors        []mgl32.Vec4
@@ -84,13 +76,6 @@ var settings = AppSettings{
 		RadiusMin: 3.0, RadiusMax: 6.0,
 		HeightRatio: 1.0,
 		Count: 5000,
-	},
-
-	CellsAdvanced: CellSettingsDynamic{
-		PolarStd: "0.4", PolarMean: "3.1415 / 2.0",
-		RadiusMin: "3.0", RadiusMax: "6.0",
-		HeightRatio: "0.25",
-		CycleLength: 1.0,
 	},
 
 	Rendering: RenderingSettings{
@@ -352,19 +337,11 @@ func main() {
 	circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 	
 	pickerStates := make([]bool, len(settings.Colors))
-	activeSettingsExpression := make(map[string]app.Expr, 1)
-
-	activeSettingsExpression["RadiusMin"] = app.Parse(settings.CellsAdvanced.RadiusMin)
-	activeSettingsExpression["RadiusMax"] = app.Parse(settings.CellsAdvanced.RadiusMax)
-	activeSettingsExpression["PolarStd"] = app.Parse(settings.CellsAdvanced.PolarStd)
-	activeSettingsExpression["PolarMean"] = app.Parse(settings.CellsAdvanced.PolarMean)
-	activeSettingsExpression["HeightRatio"] = app.Parse(settings.CellsAdvanced.HeightRatio)
 
 	showUI := true
 
 	start := time.Now()
 	t := 0.0
-	advancedCellControl := false
 
 	screenshotTextTimer := 0.0
 	screenshotTextDuration := 1.75
@@ -455,20 +432,6 @@ func main() {
 				settings.Cells.HeightRatio, _ = panel.AddSlider("HeightRatio", settings.Cells.HeightRatio, 0, 1.0)
 	
 				panel.End()
-				panel = ui.StartPanel("Advanced", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
-				advancedCellControl, _ = panel.AddToggle("Active", advancedCellControl)
-				settings.CellsAdvanced.RadiusMin, _ = panel.AddTextField("RadiusMin", settings.CellsAdvanced.RadiusMin)
-				newExpression := app.Parse(settings.CellsAdvanced.RadiusMin)
-				if newExpression != nil {
-					activeSettingsExpression["RadiusMin"] = newExpression
-				}
-				settings.CellsAdvanced.HeightRatio, _ = panel.AddTextField("HeightRatio", settings.CellsAdvanced.HeightRatio)
-				newExpression = app.Parse(settings.CellsAdvanced.HeightRatio)
-				if newExpression != nil {
-					activeSettingsExpression["HeightRatio"] = newExpression
-				}
-				settings.CellsAdvanced.CycleLength, _ = panel.AddSlider("CycleLength", settings.CellsAdvanced.CycleLength, 0, 10.0)
-				panel.End()
 			}
 
 			// SSAO related settings.
@@ -514,11 +477,6 @@ func main() {
 		}
 		if screenshotTextTimer > 0.0 {
 			screenshotTextTimer -= dt
-		}
-		if settings.CellsAdvanced.CycleLength > 0 {
-			t = math.Mod(t, settings.CellsAdvanced.CycleLength)
-		} else {
-			t = 0.0
 		}
 
 		settings.Camera.Update(dt)
@@ -661,10 +619,7 @@ func main() {
 		polarStd := settings.Cells.PolarStd
 		polarMean := settings.Cells.PolarMean
 		heightRatio := settings.Cells.HeightRatio
-		if advancedCellControl {
-			radiusMin = activeSettingsExpression["RadiusMin"].Eval(map[string]float64{"t": t})
-			heightRatio = activeSettingsExpression["HeightRatio"].Eval(map[string]float64{"t": t})
-		}
+		
 		for _, cell := range cells[:settings.Cells.Count] {
 			color := settings.Colors[cell.colorIndex].Mul(cell.colorModifier)
 

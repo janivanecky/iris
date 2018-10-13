@@ -1,36 +1,34 @@
 =========================
 DOING
 =========================
-- cleanup main.go
 
 =========================
-TODOe
+TODO
 =========================
 MAINTENANCE
 - do app specific UI properly
-- remove unused functionality
 - remove global states?
-- parser return error instead of just nil?
+- cleanup main.go
 - cleanup shaders
 - cleanup UI.go
+- cleanup camera.go
+- move libs to app repo
+- optimize so running 60fps on integrated card
 
 FEATURES
-- save command (F11)
-- load/save bar on the left
-- load/save bar displaying settings
-- save button
+- better slider
+- UI for selecting colors (with pre-fetching)
+- on click reaction (color/width)
+
+- rotation of the whole thing using circle?
 - screenshot in 4k
 - screenshot effect? (flash)
-- better settings saving - save button / reset to default buttons / save as button?
-- autogenerate UI for settings
-- UI for selecting colors
 - circle uses depth buffer
-- rotation of the whole thing?
+- separate settings from displayed stuff - settings should have target, not interpolated values always!
 - optimize circle generation, so we don't have to re-generate/re-allocate that often
 
 NEEDS FIX
 - Banding SSAO?
-- Stutter when launching goroutine for fetching new colors
 
 MAYBE NOT?
 - instanced text rendering?
@@ -39,6 +37,49 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+13/10/18
+- remove unused functionality
+
+
+08/09/18
+- smooth camera transitions
+- cleanup instanced rendering
+- instanced rendering
+
+07/09/18
+- hover load bar settings smooth transition?
+- delete button icon
+- actually delete save file
+- save button
+- smooth delete button hover
+- delete save button
+
+06/09/18
+- make loader scrolling robust
+- make default save settings separate (different folder)
+- save settings immutable
+- hover load bar
+- selected save should be real-time shown
+- auto-hide load bar
+- scroll load bar
+- fetch textures for all settings at the beginning
+- load/save bar display settings (image)
+- smooth color switching
+- settings should be actually saved (in memory) when switching between different ones
+- make settings images clickable
+- add ability to switch settings (left-right)
+- automatically update settings map/list when saved
+
+05/09/18
+- load/save bar displaying settings (just squares)
+- load/save bar on the left
+- save command (F11)
+- get all saves
+- slider smooth
+- rendering settings from app. to app.rendering (RenderingSettings type)
+- cleanup main.go
+
+
 04/09/18
 - radiusMax must be > radiusMIn
 

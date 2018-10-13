@@ -11,6 +11,7 @@ import (
 
 // Pipelines used for UI rendering.
 var uiTextPipeline Pipeline
+var uiRectTexturePipeline Pipeline
 var uiRectPipeline Pipeline
 
 // Additional settings/data necessary for UI rendering.
@@ -30,12 +31,13 @@ func initUIRendering(uiFont font.Font, windowWidth, windowHeight float64) {
 	// Pipelines initialization
 	uiTextPipeline = InitPipeline("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
 	uiRectPipeline = InitPipeline("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
+	uiRectTexturePipeline = InitPipeline("shaders/text_vertex_shader.glsl", "shaders/rect_texture_pixel_shader.glsl")
 
 	// Set up texture cache.
 	textureCache = make(map[*font.Font] graphics.Texture)
 }
 
-func renderUI(targetBuffer graphics.Framebuffer, textEntities []textData, rectEntities []rectData) {
+func renderUI(targetBuffer graphics.Framebuffer, textEntities []textData, rectEntities []rectData, rectTextureEntities []rectTextureData) {
 	// We need alpha rendering and no depth tests.
 	graphics.EnableBlending()
 	graphics.DisableDepthTest()
@@ -53,15 +55,23 @@ func renderUI(targetBuffer graphics.Framebuffer, textEntities []textData, rectEn
 		drawRect(uiRectPipeline, rectEntity.position, rectEntity.size, rectEntity.color)
 	}
 
-	// Set up 2D text rendering pipeline,
+	uiRectTexturePipeline.Start()
+	uiRectTexturePipeline.SetUniform("projection_matrix", uiProjectionMatrix)
+
+	// Render all textured rectangle entities.
+	for _, rectTextureEntity := range rectTextureEntities {
+		drawRectTexture(uiRectTexturePipeline, rectTextureEntity.position, rectTextureEntity.size, rectTextureEntity.texture, rectTextureEntity.color)
+	}
+
+	// Set up 2D text rendering pipeline.
 	uiTextPipeline.Start()
 	uiTextPipeline.SetUniform("projection_matrix", uiProjectionMatrix)
-	
+
 	// Render all the text entities.
 	for _, textEntity := range textEntities {
 		drawText(uiTextPipeline, textEntity.text, textEntity.font, textEntity.position, textEntity.color, textEntity.origin)
 	}
-	
+
 	// Disable SRGB rendering.
 	// TODO: Ideally we want to revert to original SRGB rendering state instead of always disabling.
 	graphics.DisableSRGBRendering()
@@ -73,9 +83,9 @@ func renderUI(targetBuffer graphics.Framebuffer, textEntities []textData, rectEn
 }
 
 /*
-The final model matrix consist of 3 matrices T2 * S.
-S  - scales the quad to (sx, sy) dimensions.
-T2  -positions the quad on the screen.
+The final model matrix is M; M = T * S.
+S - scales the quad to (sx, sy) dimensions.
+T - positions the quad on the screen.
 */
 func getModelMatrix(x, y, sx, sy float32) mgl32.Mat4 {
 	modelMatrix := mgl32.Translate3D(x, y, 0).Mul4(
@@ -93,6 +103,20 @@ func drawRect(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Ve
 	// Render rectangle.
 	pipeline.SetUniform("model_matrix", modelMatrix)
 	pipeline.SetUniform("color", color)
+	graphics.DrawMesh(uiQuad)
+}
+
+func drawRectTexture(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, texture graphics.Texture, color mgl32.Vec4) {
+	// Set up transformation parameters.
+	x, y := pos[0], float32(uiScreenHeight) - pos[1]
+	sx, sy := size[0], size[1]
+	modelMatrix := getModelMatrix(x, y, sx, sy)
+
+	// Render rectangle.
+	pipeline.SetUniform("model_matrix", modelMatrix)
+	pipeline.SetUniform("color", color)
+	pipeline.SetUniform("source_rect", mgl32.Vec4{0,0,1,1})
+	graphics.SetTexture(texture, 0)
 	graphics.DrawMesh(uiQuad)
 }
 

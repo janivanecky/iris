@@ -1,17 +1,22 @@
 =========================
 DOING
 =========================
+- cleanup main.go
 
 =========================
 TODO
 =========================
 MAINTENANCE
 - do app specific UI properly
+- camera
+    - copySettings is not complete because of camera
+    - the issue is that settings don't have the current state of camera, but separate "camera" object in main.go does
+    - possible solution is to have CameraSettings in settings on which "camera" operates.
 - remove global states?
-- cleanup main.go
 - cleanup shaders
 - cleanup UI.go
-- move libs to app repo
+- cleanup render_xxx.go
+- cleanup libs
 - optimize so running 60fps on integrated card
 - redo as async systems?
 - camera shouldn't communicate with UI
@@ -39,6 +44,7 @@ MAYBE NOT?
 DONE
 =========================
 14/10/18
+- move libs to app repo
 - cleanup camera.go
 
 13/10/18

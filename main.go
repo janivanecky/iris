@@ -20,10 +20,10 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"./app"
-	"github.com/janivanecky/golib/font"
-	"github.com/janivanecky/golib/graphics"
-	"github.com/janivanecky/golib/platform"
-	"github.com/janivanecky/golib/ui"
+	"./lib/font"
+	"./lib/graphics"
+	"./lib/platform"
+	"./lib/ui"
 )
 
 func init() {
@@ -51,10 +51,14 @@ type CellSettings struct {
 	Count				   int
 }
 
+type CameraSettings struct {
+	Radius, Azimuth, Polar, Height float64
+}
+
 type AppSettings struct {
 	Cells         CellSettings
 	Rendering     app.RenderingSettings
-	Camera        app.Camera
+	Camera        CameraSettings
 	Colors        []mgl32.Vec4
 }
 
@@ -90,7 +94,7 @@ var defaultSettings = AppSettings{
 		MinWhite: 8.0,
 	},
 
-	Camera: app.GetCamera(100.0, 0.0, 0.0, 0.0, 5.0),
+	Camera: CameraSettings{100.0, 0.0, 0.0, 0.0},
 
 	Colors: []mgl32.Vec4{
 		mgl32.Vec4{24 / 255.0, 193 / 255.0, 236 / 255.0, 1.0},
@@ -364,8 +368,6 @@ func main() {
 	uiFontTitle := font.GetFont(truetypeTitleBytes, 34.0, scale)
 	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
 	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle, &settings.Rendering)
-	camera := settings.Camera
-	app.SetCamera(&camera)
 
 	trashIconFile, err := os.Open("trash.png")
     if err != nil {
@@ -477,13 +479,17 @@ func main() {
 
 	for i, _ := range settingsList {
 		drawCells(cells, settingsList[i].Cells, settingsList[i].Colors, cube)
-		app.SetCamera(&settingsList[i].Camera)
+		camera := app.GetCamera(settingsList[i].Camera.Radius, settingsList[i].Camera.Azimuth, settingsList[i].Camera.Polar, settingsList[i].Camera.Height, 5.0)
+		app.SetCamera(camera)
 		app.Render()
 		
 		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 		texture := graphics.GetTexture(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 		settingsTextures = append(settingsTextures, texture)
 	}
+
+	camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
+	app.SetCamera(camera)
 
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
@@ -656,7 +662,6 @@ func main() {
 						maxSaveNum++
 						settingsName := "settings_" + strconv.Itoa(maxSaveNum)
 						newSettings := copySettings(&settings)
-						newSettings.Camera = camera
 						settingsList = append(settingsList, newSettings)
 						loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
 						loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
@@ -697,10 +702,10 @@ func main() {
 						loadBarDeleteButtonColors[i].target = deleteBarColor
 						if platform.IsMouseLeftButtonPressed() {
 							settings = copySettings(&settingsList[i])
-							camera.TargetRadius = settings.Camera.TargetRadius
-							camera.TargetPolar = settings.Camera.TargetPolar
-							camera.TargetAzimuth = settings.Camera.TargetAzimuth
-							camera.TargetHeight = settings.Camera.TargetHeight
+							camera.TargetRadius = settings.Camera.Radius
+							camera.TargetPolar = settings.Camera.Polar
+							camera.TargetAzimuth = settings.Camera.Azimuth
+							camera.TargetHeight = settings.Camera.Height
 							outerCircleRadius.target = settings.Cells.RadiusMax
 							countSliderValue.target = float64(settings.Cells.Count)
 							innerCircleRadius.target = settings.Cells.RadiusMin
@@ -839,8 +844,12 @@ func main() {
 
 		drawCells(cells, settings.Cells, settings.Colors, cube)
 
-		app.SetCamera(&camera)
+		app.SetCamera(camera)
 		camera.Update(dt)
+		settings.Camera.Radius = camera.TargetRadius
+		settings.Camera.Azimuth = camera.TargetAzimuth
+		settings.Camera.Polar = camera.TargetPolar
+		settings.Camera.Height = camera.TargetHeight
 		app.Render()
 
 		// Swappity-swap.

@@ -15,6 +15,9 @@ var data = []byte (`{"model": "default"}`)
 
 func GetRandomColorPalette() [] mgl32.Vec4{
 	res, err := http.Post("http://colormind.io/api/", "text/json", bytes.NewBuffer(data))
+	if err != nil {
+		return nil
+	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)

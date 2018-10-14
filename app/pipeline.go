@@ -5,19 +5,12 @@ import (
 	"io/ioutil"
 	
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/janivanecky/golib/graphics"
+	"../lib/graphics"
 )
 
 type Pipeline struct {
 	program graphics.Program
 	uniforms map[string]graphics.Uniform
-}
-
-func (pipeline *Pipeline) AddUniforms(uniforms ... string) {
-	graphics.SetProgram(pipeline.program)
-	for _, uniform := range uniforms {
-		pipeline.uniforms[uniform] = graphics.GetUniform(pipeline.program, uniform)
-	}
 }
 
 func (pipeline *Pipeline) SetUniform(uniform string, value interface{}) {
@@ -52,45 +45,36 @@ func (pipeline *Pipeline) Start() {
 	graphics.SetProgram(pipeline.program)
 }
 
-func InitPipeline(vertexShaderFile, pixelShaderFile string) Pipeline {
-	program, err := getProgram(vertexShaderFile, pixelShaderFile)
+func GetPipeline(vertexShaderFile, pixelShaderFile string) Pipeline {
+	vertexShaderData, err := ioutil.ReadFile(vertexShaderFile)
 	if err != nil {
 		fmt.Println(err)
-	}
-	return Pipeline{program, make(map[string]graphics.Uniform)}
-}
-
-func getProgram(vertexShaderPath string, pixelShaderPath string) (graphics.Program, error) {
-	vertexShaderData, err := ioutil.ReadFile(vertexShaderPath)
-	if err != nil {
-		fmt.Println(err)
-		return graphics.Program(0), err
+		return Pipeline{}
 	}
 	
 	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
 	if err != nil {
 		fmt.Println(err)
-		return graphics.Program(0), err
+		return Pipeline{}
 	}
 
-	pixelShaderData, err := ioutil.ReadFile(pixelShaderPath)
+	pixelShaderData, err := ioutil.ReadFile(pixelShaderFile)
 	if err != nil {
 		fmt.Println(err)
-		return graphics.Program(0), err
+		return Pipeline{}
 	}
 
 	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
 	if err != nil {
 		fmt.Println(err)
-		return graphics.Program(0), err
+		return Pipeline{}
 	}
 
 	program, err := graphics.GetProgram(vertexShader, pixelShader)
 	if err != nil {
 		fmt.Println(err)
-		return graphics.Program(0), err
+		return Pipeline{}
 	}
 	graphics.ReleaseShaders(vertexShader, pixelShader)
-	
-	return program, nil
+	return Pipeline{program, make(map[string]graphics.Uniform)}
 }

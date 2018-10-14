@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	
-	"github.com/janivanecky/golib/font"
-	"github.com/janivanecky/golib/graphics"
+	"../lib/font"
+	"../lib/graphics"
 )
 
 // Pipelines used for UI rendering.
@@ -29,9 +29,9 @@ func initUIRendering(uiFont font.Font, windowWidth, windowHeight float64) {
 	uiProjectionMatrix = mgl32.Ortho(0.0, float32(windowWidth), 0.0, float32(windowHeight), 10.0, -10.0)
 
 	// Pipelines initialization
-	uiTextPipeline = InitPipeline("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
-	uiRectPipeline = InitPipeline("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
-	uiRectTexturePipeline = InitPipeline("shaders/text_vertex_shader.glsl", "shaders/rect_texture_pixel_shader.glsl")
+	uiTextPipeline = GetPipeline("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
+	uiRectPipeline = GetPipeline("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
+	uiRectTexturePipeline = GetPipeline("shaders/text_vertex_shader.glsl", "shaders/rect_texture_pixel_shader.glsl")
 
 	// Set up texture cache.
 	textureCache = make(map[*font.Font] graphics.Texture)

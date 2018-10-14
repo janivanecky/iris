@@ -2,11 +2,10 @@ package app
 
 import (
 	"math"
-	"encoding/json"
 	"github.com/go-gl/mathgl/mgl32"
 	
-	"github.com/janivanecky/golib/platform"
-	"github.com/janivanecky/golib/ui"
+	"../lib/platform"
+	"../lib/ui"
 )
 
 
@@ -26,31 +25,6 @@ func GetCamera(radius, azimuth, polar, height, speed float64) Camera {
 		TargetHeight: height, height: height,
 		speed: speed,
 	}
-}
-
-type _Camera Camera
-func (cam *Camera) UnmarshalJSON(b []byte) error {
-	// This _Camera trickery prevents infinite recursion.
-	_cam := _Camera{}
-	err := json.Unmarshal(b, &_cam)
-	if err != nil {
-		return err
-	}
-
-	// When deserializing, we want the camera to be in the target position
-	// already. We need to set the values manually, because current position
-	// is not serialized (because current position describes application state,
-	// not visualization parameters).
-	cam.radius 		  = _cam.TargetRadius
-	cam.TargetRadius  = _cam.TargetRadius
-	cam.azimuth 	  = _cam.TargetAzimuth
-	cam.TargetAzimuth = _cam.TargetAzimuth
-	cam.polar 		  = _cam.TargetPolar
-	cam.TargetPolar   = _cam.TargetPolar
-	cam.height 		  = _cam.TargetHeight
-	cam.TargetHeight  = _cam.TargetHeight
-
-	return nil
 }
 
 // Struct "methods"

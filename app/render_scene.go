@@ -8,7 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/gl/v4.1-core/gl"
 
-	"github.com/janivanecky/golib/graphics"
+	"../lib/graphics"
 )
 
 // Pipelines used for 3D scene rendering.
@@ -108,16 +108,16 @@ var instanceColorBuffer graphics.InstanceBuffer
 
 func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *RenderingSettings) {
 	// Initialize 3D scene rendering pipelines.
-	pipelinePBR = InitPipeline("shaders/geometry_vertex_shader.glsl", "shaders/pbr_pixel_shader.glsl")
-	pipelinePBRInstanced = InitPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/pbr_pixel_shader.glsl")
-	pipelineGeometry = InitPipeline("shaders/geometry_vertex_shader.glsl", "shaders/geometry_pixel_shader.glsl")
-	pipelineGeometryInstanced = InitPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/geometry_pixel_shader.glsl")
-	pipelineBlur = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/blur_pixel_shader.glsl")
-	pipelineBlit = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/blit_pixel_shader.glsl")
-	pipelineEffect = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/effect_pixel_shader.glsl")
-	pipelineShading = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/shading_pixel_shader.glsl")
-	pipelineSSAO = InitPipeline("shaders/blit_vertex_shader.glsl", "shaders/ssao_pixel_shader.glsl")
-	pipelineUI = InitPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
+	pipelinePBR = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/pbr_pixel_shader.glsl")
+	pipelinePBRInstanced = GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/pbr_pixel_shader.glsl")
+	pipelineGeometry = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/geometry_pixel_shader.glsl")
+	pipelineGeometryInstanced = GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/geometry_pixel_shader.glsl")
+	pipelineBlur = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blur_pixel_shader.glsl")
+	pipelineBlit = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blit_pixel_shader.glsl")
+	pipelineEffect = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/effect_pixel_shader.glsl")
+	pipelineShading = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/shading_pixel_shader.glsl")
+	pipelineSSAO = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/ssao_pixel_shader.glsl")
+	pipelineUI = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
 
 	// Set up framebuffers for rendering.
 	backbufferWidth, backbufferHeight := windowWidth, windowHeight

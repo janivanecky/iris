@@ -3,9 +3,9 @@ package app
 import (
 	"github.com/go-gl/mathgl/mgl32"
 
-	"github.com/janivanecky/golib/font"
-	"github.com/janivanecky/golib/graphics"
-	"github.com/janivanecky/golib/ui"
+	"../lib/font"
+	"../lib/graphics"
+	"../lib/ui"
 )
 
 type textData struct {
@@ -128,7 +128,7 @@ func Render() {
 	ui.Clear()
 }
 
-func SetCamera(camera *Camera) {
+func SetCamera(camera Camera) {
 	position := camera.GetPosition()
 	target := camera.GetTarget()
 	up := camera.GetUp()

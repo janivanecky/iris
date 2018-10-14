@@ -11,9 +11,10 @@ MAINTENANCE
 - cleanup main.go
 - cleanup shaders
 - cleanup UI.go
-- cleanup camera.go
 - move libs to app repo
 - optimize so running 60fps on integrated card
+- redo as async systems?
+- camera shouldn't communicate with UI
 
 FEATURES
 - better slider
@@ -37,6 +38,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+14/10/18
+- cleanup camera.go
+
 13/10/18
 - remove unused functionality
 

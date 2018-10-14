@@ -90,7 +90,7 @@ var defaultSettings = AppSettings{
 		MinWhite: 8.0,
 	},
 
-	Camera: app.GetCamera(100.0, 0.0, 0.0, 5.0),
+	Camera: app.GetCamera(100.0, 0.0, 0.0, 0.0, 5.0),
 
 	Colors: []mgl32.Vec4{
 		mgl32.Vec4{24 / 255.0, 193 / 255.0, 236 / 255.0, 1.0},
@@ -365,7 +365,6 @@ func main() {
 	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
 	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle, &settings.Rendering)
 	camera := settings.Camera
-	camera.UpdateFully()
 	app.SetCamera(&camera)
 
 	trashIconFile, err := os.Open("trash.png")
@@ -478,8 +477,6 @@ func main() {
 
 	for i, _ := range settingsList {
 		drawCells(cells, settingsList[i].Cells, settingsList[i].Colors, cube)
-
-		settingsList[i].Camera.UpdateFully()
 		app.SetCamera(&settingsList[i].Camera)
 		app.Render()
 		
@@ -702,7 +699,7 @@ func main() {
 							settings = copySettings(&settingsList[i])
 							camera.TargetRadius = settings.Camera.TargetRadius
 							camera.TargetPolar = settings.Camera.TargetPolar
-							camera.SetAzimuth(settings.Camera.TargetAzimuth)
+							camera.TargetAzimuth = settings.Camera.TargetAzimuth
 							camera.TargetHeight = settings.Camera.TargetHeight
 							outerCircleRadius.target = settings.Cells.RadiusMax
 							countSliderValue.target = float64(settings.Cells.Count)

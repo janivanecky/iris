@@ -133,7 +133,7 @@ func SetCamera(camera *Camera) {
 	target := camera.GetTarget()
 	up := camera.GetUp()
 	sceneCameraPosition = position.Add(target)
-	sceneViewMatrix = mgl32.LookAtV(position.Add(target), target, up)
+	sceneViewMatrix = mgl32.LookAtV(sceneCameraPosition, target, up)
 }
 
 func DrawMesh(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {

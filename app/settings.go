@@ -18,6 +18,7 @@ type CellSettings struct {
 	RadiusMin, RadiusMax   float64
 	HeightRatio            float64
 	Count				   int
+	Colors        		   []mgl32.Vec4
 }
 
 type CameraSettings struct {
@@ -28,7 +29,6 @@ type AppSettings struct {
 	Cells         CellSettings
 	Rendering     RenderingSettings
 	Camera        CameraSettings
-	Colors        []mgl32.Vec4
 	id 			  int
 }
 
@@ -38,8 +38,8 @@ func copySettings(settings *AppSettings) AppSettings {
 	newSettings.Cells = settings.Cells
 	newSettings.Rendering = settings.Rendering
 	newSettings.Camera = settings.Camera
-	newSettings.Colors = make([]mgl32.Vec4, len(settings.Colors))
-	copy(newSettings.Colors, settings.Colors)
+	newSettings.Cells.Colors = make([]mgl32.Vec4, len(settings.Cells.Colors))
+	copy(newSettings.Cells.Colors, settings.Cells.Colors)
 	return newSettings
 }
 
@@ -49,6 +49,13 @@ var defaultSettings = AppSettings{
 		RadiusMin: 3.0, RadiusMax: 15.0,
 		HeightRatio: 1.0,
 		Count: 5000,
+		Colors: []mgl32.Vec4{
+			mgl32.Vec4{24 / 255.0, 193 / 255.0, 236 / 255.0, 1.0},
+			mgl32.Vec4{0 / 255.0, 185 / 255.0, 121 / 255.0, 1.0},
+			mgl32.Vec4{236 / 255.0, 24 / 255.0, 97 / 255.0, 1.0},
+			mgl32.Vec4{33 / 255.0, 73 / 255.0, 83 / 255.0, 1.0},
+			mgl32.Vec4{194 / 255.0, 55 / 255.0, 48 / 255.0, 1.0},
+		},
 	},
 
 	Rendering: RenderingSettings{
@@ -66,14 +73,6 @@ var defaultSettings = AppSettings{
 	},
 
 	Camera: CameraSettings{100.0, 0.0, 0.0, 0.0},
-
-	Colors: []mgl32.Vec4{
-		mgl32.Vec4{24 / 255.0, 193 / 255.0, 236 / 255.0, 1.0},
-		mgl32.Vec4{0 / 255.0, 185 / 255.0, 121 / 255.0, 1.0},
-		mgl32.Vec4{236 / 255.0, 24 / 255.0, 97 / 255.0, 1.0},
-		mgl32.Vec4{33 / 255.0, 73 / 255.0, 83 / 255.0, 1.0},
-		mgl32.Vec4{194 / 255.0, 55 / 255.0, 48 / 255.0, 1.0},
-	},
 }
 
 func loadSingleSettings(path string) AppSettings {

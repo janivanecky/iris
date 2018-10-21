@@ -141,9 +141,9 @@ func InvertBytes (bytes []byte, rowLength, rowCount int) []byte{
 }
 
 // APP RENDER
-func drawCells(cells []app.Cell, cellsSettings app.CellSettings, palette []mgl32.Vec4, mesh graphics.Mesh) {
+func drawCells(cells []app.Cell, cellsSettings app.CellSettings, mesh graphics.Mesh) {
 	matrices := app.GetCellMatrices(cells, cellsSettings)
-	colors := app.GetCellColors(cells, cellsSettings, palette)
+	colors := app.GetCellColors(cells, cellsSettings)
 	app.DrawMeshInstanced(mesh, matrices, colors, cellsSettings.Count)
 }
 
@@ -251,7 +251,7 @@ func main() {
 
 	// Colors parameters
 	colorsParams := make([]ColorParameter, 0)
-	for _, color := range settings.Colors {
+	for _, color := range settings.Cells.Colors {
 		colorsParams = append(colorsParams, ColorParameter{color, color})
 	}
 
@@ -265,7 +265,7 @@ func main() {
 	
 	// Runtime variables
 	showUI := false
-	pickerStates := make([]bool, len(settings.Colors))
+	pickerStates := make([]bool, len(settings.Cells.Colors))
 	
 	start := time.Now()
 	timeSinceMouseMovement := 0.0
@@ -278,7 +278,7 @@ func main() {
 	// UI - depends on RENDERING
 	for i := 0; i < settingsCount; i++ {
 		settings := app.GetSettings(i)
-		drawCells(cells, settings.Cells, settings.Colors, cube)
+		drawCells(cells, settings.Cells, cube)
 		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
 		app.SetCamera(camera)
 		app.Render()
@@ -358,10 +358,10 @@ func main() {
 			panel = ui.StartPanel("Material", mgl32.Vec2{float32(windowWidth) - 10 - nextWidth, 10}, float64(nextWidth))
 			settings.Rendering.Roughness, _ = panel.AddSlider("Roughness", settings.Rendering.Roughness, 0, 1.0)
 			settings.Rendering.Reflectivity, _ = panel.AddSlider("Reflectivity", settings.Rendering.Reflectivity, 0, 1.0)
-			for i := range settings.Colors {
-				pickerStates[i], _ = panel.AddColorPalette("Color"+strconv.Itoa(i), settings.Colors[i], pickerStates[i])
+			for i := range settings.Cells.Colors {
+				pickerStates[i], _ = panel.AddColorPalette("Color"+strconv.Itoa(i), settings.Cells.Colors[i], pickerStates[i])
 				if pickerStates[i] {
-					settings.Colors[i], _ = panel.AddColorPicker("Pick"+strconv.Itoa(i), settings.Colors[i], false)
+					settings.Cells.Colors[i], _ = panel.AddColorPicker("Pick"+strconv.Itoa(i), settings.Cells.Colors[i], false)
 				}
 			}
 			panel.End()
@@ -495,7 +495,7 @@ func main() {
 						countSliderValue.target = float64(settings.Cells.Count)
 						innerCircleRadius.target = settings.Cells.RadiusMin
 						for i := range colorsParams {
-							colorsParams[i].target = settings.Colors[i]
+							colorsParams[i].target = settings.Cells.Colors[i]
 						}
 					}
 				}
@@ -618,12 +618,12 @@ func main() {
 			}
 		default:
 		}
-		for i := range settings.Colors {
-			settings.Colors[i] = colorsParams[i].val
+		for i := range settings.Cells.Colors {
+			settings.Cells.Colors[i] = colorsParams[i].val
 			colorsParams[i].Update(dt, 5.0)
 		}
 
-		drawCells(cells, settings.Cells, settings.Colors, cube)
+		drawCells(cells, settings.Cells, cube)
 
 		app.SetCamera(camera)
 		camera.Update(dt)

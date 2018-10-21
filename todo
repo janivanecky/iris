@@ -1,7 +1,6 @@
 =========================
 DOING
 =========================
-- colors to CellSettings
 - CellSettings to cells.go and rename to CellConfig/CellSpec/CellParams
 - do app specific UI properly
 
@@ -41,9 +40,11 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+21/10/19
+- colors to CellSettings
+
 19/10/19
 - separate cell generation from main
-
 
 18/10/18
 - image invert function

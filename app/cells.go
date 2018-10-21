@@ -79,10 +79,10 @@ func GetCellMatrices(cells []Cell, cellsSettings CellSettings) []mgl32.Mat4{
 	return matrices
 }
 
-func GetCellColors(cells []Cell, cellsSettings CellSettings, palette []mgl32.Vec4) []mgl32.Vec4{
+func GetCellColors(cells []Cell, cellsSettings CellSettings) []mgl32.Vec4{
 	colors := make([]mgl32.Vec4, cellsSettings.Count)
 	for i, cell := range cells[:cellsSettings.Count] {
-		colors[i] = palette[cell.colorIndex].Mul(cell.colorModifier)
+		colors[i] = cellsSettings.Colors[cell.colorIndex].Mul(cell.colorModifier)
 
 	}
 	return colors

@@ -1,22 +1,20 @@
 =========================
 DOING
 =========================
-- cleanup main.go
+- colors to CellSettings
+- CellSettings to cells.go and rename to CellConfig/CellSpec/CellParams
+- do app specific UI properly
 
 =========================
 TODO
 =========================
 MAINTENANCE
-- do app specific UI properly
-- camera
-    - copySettings is not complete because of camera
-    - the issue is that settings don't have the current state of camera, but separate "camera" object in main.go does
-    - possible solution is to have CameraSettings in settings on which "camera" operates.
 - remove global states?
 - cleanup shaders
 - cleanup UI.go
 - cleanup render_xxx.go
 - cleanup libs
+- cleanup main.go
 - optimize so running 60fps on integrated card
 - redo as async systems?
 - camera shouldn't communicate with UI
@@ -43,9 +41,21 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+19/10/19
+- separate cell generation from main
+
+
+18/10/18
+- image invert function
+
+15/10/18
+- screenshot manager
+
 14/10/18
+- settings manager
 - move libs to app repo
 - cleanup camera.go
+- add CameraSettings
 
 13/10/18
 - remove unused functionality

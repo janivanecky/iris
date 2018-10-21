@@ -1,17 +1,12 @@
 package main
 
 import (
-	"strings"
-	"encoding/json"
 	"fmt"
 	"image"
-	"image/jpeg"
 	_ "image/png"
 	"io/ioutil"
 	"math"
-	"math/rand"
 	"os"
-	"sort"
 	"strconv"
 	"time"
 
@@ -30,163 +25,7 @@ func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-func updateColorPalette(c chan []mgl32.Vec4) {
-	newColors := app.GetRandomColorPalette()
-	if newColors != nil {
-		c <- newColors
-	}
-}
-
-type cell struct {
-	polar, angle, radius float64
-	scale                mgl32.Vec3
-	colorModifier        float32
-	colorIndex           int
-}
-
-type CellSettings struct {
-	PolarStd, PolarMean    float64
-	RadiusMin, RadiusMax   float64
-	HeightRatio            float64
-	Count				   int
-}
-
-type CameraSettings struct {
-	Radius, Azimuth, Polar, Height float64
-}
-
-type AppSettings struct {
-	Cells         CellSettings
-	Rendering     app.RenderingSettings
-	Camera        CameraSettings
-	Colors        []mgl32.Vec4
-}
-
-func copySettings(settings *AppSettings) AppSettings {
-	newSettings := AppSettings{}
-	newSettings.Cells = settings.Cells
-	newSettings.Rendering = settings.Rendering
-	newSettings.Camera = settings.Camera
-	newSettings.Colors = make([]mgl32.Vec4, len(settings.Colors))
-	copy(newSettings.Colors, settings.Colors)
-	return newSettings
-}
-
-var defaultSettings = AppSettings{
-	Cells: CellSettings{
-		PolarStd: 0.00, PolarMean: math.Pi / 2.0,
-		RadiusMin: 3.0, RadiusMax: 15.0,
-		HeightRatio: 1.0,
-		Count: 5000,
-	},
-
-	Rendering: app.RenderingSettings{
-		DirectLight:  0.5,
-		AmbientLight: 0.75,
-
-		Roughness:    1.0,
-		Reflectivity: 0.05,
-
-		SSAORadius:   0.5,
-		SSAORange:    3.0,
-		SSAOBoundary: 1.0,
-
-		MinWhite: 8.0,
-	},
-
-	Camera: CameraSettings{100.0, 0.0, 0.0, 0.0},
-
-	Colors: []mgl32.Vec4{
-		mgl32.Vec4{24 / 255.0, 193 / 255.0, 236 / 255.0, 1.0},
-		mgl32.Vec4{0 / 255.0, 185 / 255.0, 121 / 255.0, 1.0},
-		mgl32.Vec4{236 / 255.0, 24 / 255.0, 97 / 255.0, 1.0},
-		mgl32.Vec4{33 / 255.0, 73 / 255.0, 83 / 255.0, 1.0},
-		mgl32.Vec4{194 / 255.0, 55 / 255.0, 48 / 255.0, 1.0},
-	},
-}
-
-func generateCells(cells []cell) {
-	for i := range cells {
-		scaleX := rand.Float32()*0.8 + 0.2
-		scaleZ := rand.Float32()*0.8 + 0.2
-		scaleX *= scaleX * 4.0 / 3.0
-		scaleZ *= scaleZ * 2.0
-		scaleX *= 2.0
-		scaleZ *= 2.0
-		scaleY := scaleX + scaleZ
-
-		polar := rand.NormFloat64()
-		angle := rand.Float64() * math.Pi * 2
-
-		radius := rand.Float64()
-
-		//radius *= radius
-		scale := mgl32.Vec3{scaleX, scaleY, scaleZ}
-		colorModifier := rand.Float32()*0.5 + 0.5
-		colorIndex := rand.Int() % 5
-		cells[i] = cell{polar, angle, radius, scale, colorModifier, colorIndex}
-	}
-}
-
-var SAVES_DIR = "saves"
-func loadSettings(path string) AppSettings {
-	settings := defaultSettings
-	newColors := make([]mgl32.Vec4, len(settings.Colors))
-	copy(newColors, settings.Colors)
-	settings.Colors = newColors
-	serializedSettings, err := ioutil.ReadFile(path)
-	if err != nil {
-		return settings//panic(err)
-	}
-	err = json.Unmarshal(serializedSettings, &settings)
-	if err != nil {
-		panic(err)
-	}
-	return settings
-}
-
-func saveSettings(path string, settings AppSettings) {
-	serializedSettings, err := json.Marshal(settings)
-	if err != nil {
-		panic(err)
-	}
-	err = ioutil.WriteFile(path, serializedSettings, 0644)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32) {
-	pointCount := uint32(128)
-
-	vertices := make([]float32, 0)
-	indices := make([]uint32, 0)
-
-	archLength := math.Pi / 4.0
-	for i := uint32(0); i < pointCount; i++ {
-		//angle := float64(i) * math.Pi * 2.0 / float64(pointCount)
-		angle := float64(i) * archLength / float64(pointCount) + arch - archLength / 2.0
-		xInner := float32(math.Sin(angle) * (radius - width))
-		zInner := float32(math.Cos(angle) * (radius - width))
-		xOuter := float32(math.Sin(angle) * (radius + width))
-		zOuter := float32(math.Cos(angle) * (radius + width))
-		y := float32(0.0)
-
-		vertices = append(vertices, xInner, y, zInner, 1.0)
-		vertices = append(vertices, 0.0, 1.0, 0.0, 1.0)
-		vertices = append(vertices, xOuter, y, zOuter, 1.0)
-		vertices = append(vertices, 0.0, 1.0, 0.0, 1.0)
-
-		index := 2 * i
-		if i < pointCount - 1 {
-			indices = append(indices, index, index+1, index+3)
-			indices = append(indices, index, index+3, index+2)
-		}
-	}
-
-	return vertices, indices
-}
-
+// APP UI
 type Parameter interface {
 	Update(dt, speed float64)
 }
@@ -231,60 +70,6 @@ func (value *RadianParameter) Update(dt, speed float64) {
 	}
 }
 
-func radiusToRadiusMin(radius float64) float64 {
-	return radius + 4.0
-}
-
-func radiusToRadiusMax(radius float64) float64 {
-	return radius - 4.0
-}
-
-func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2) bool {
-    if position[0] >= rectPosition[0] && position[0] <= rectPosition[0] + rectSize[0] &&
-       position[1] >= rectPosition[1] && position[1] <= rectPosition[1] + rectSize[1] {
-		   return true
-	   }
-    return false
-}
-
-func drawCells(cells []cell, cellsSettings CellSettings, colors []mgl32.Vec4, mesh graphics.Mesh) {
-	radiusMin := radiusToRadiusMin(cellsSettings.RadiusMin)
-	radiusMax := radiusToRadiusMax(cellsSettings.RadiusMax)
-	polarStd := cellsSettings.PolarStd
-	polarMean := cellsSettings.PolarMean
-	heightRatio := cellsSettings.HeightRatio
-
-	matrices := make([]mgl32.Mat4, cellsSettings.Count)
-	colorsInstanced := make([]mgl32.Vec4, cellsSettings.Count)
-	
-	for i, cell := range cells[:cellsSettings.Count] {
-		color := colors[cell.colorIndex].Mul(cell.colorModifier)
-
-		polar := cell.polar * polarStd + polarMean
-		angle := cell.angle
-
-		radius := cell.radius*(radiusMax - radiusMin) + radiusMin
-
-		x := float32(math.Sin(polar) * math.Sin(angle) * radius)
-		y := float32(math.Cos(polar) * radius * heightRatio)
-		z := float32(math.Sin(polar) * math.Cos(angle) * radius)
-
-		modelMatrix := mgl32.LookAt(
-			x, y, z,
-			0, 0, 0,
-			0, 1, 0,
-		).Inv().Mul4(
-			mgl32.Scale3D(cell.scale[0], cell.scale[1], cell.scale[2]),
-		)
-
-		matrices[i] = modelMatrix
-		colorsInstanced[i] = color
-
-	}
-
-	app.DrawMeshInstanced(mesh, matrices, colorsInstanced, cellsSettings.Count)
-}
-
 func uiItemControl(hover, hot, active bool) (bool, bool) {
 	if hover {
 		hot = true
@@ -303,102 +88,115 @@ func uiItemControl(hover, hot, active bool) (bool, bool) {
 	return hot, active
 }
 
+func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32) {
+	pointCount := uint32(128)
+
+	vertices := make([]float32, 0)
+	indices := make([]uint32, 0)
+
+	archLength := math.Pi / 4.0
+	for i := uint32(0); i < pointCount; i++ {
+		//angle := float64(i) * math.Pi * 2.0 / float64(pointCount)
+		angle := float64(i) * archLength / float64(pointCount) + arch - archLength / 2.0
+		xInner := float32(math.Sin(angle) * (radius - width))
+		zInner := float32(math.Cos(angle) * (radius - width))
+		xOuter := float32(math.Sin(angle) * (radius + width))
+		zOuter := float32(math.Cos(angle) * (radius + width))
+		y := float32(0.0)
+
+		vertices = append(vertices, xInner, y, zInner, 1.0)
+		vertices = append(vertices, 0.0, 1.0, 0.0, 1.0)
+		vertices = append(vertices, xOuter, y, zOuter, 1.0)
+		vertices = append(vertices, 0.0, 1.0, 0.0, 1.0)
+
+		index := 2 * i
+		if i < pointCount - 1 {
+			indices = append(indices, index, index+1, index+3)
+			indices = append(indices, index, index+3, index+2)
+		}
+	}
+
+	return vertices, indices
+}
+
+func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2) bool {
+	if position[0] >= rectPosition[0] && position[0] <= rectPosition[0] + rectSize[0] &&
+	position[1] >= rectPosition[1] && position[1] <= rectPosition[1] + rectSize[1] {
+		return true
+	}
+    return false
+}
+
+// UTILS
+func InvertBytes (bytes []byte, rowLength, rowCount int) []byte{
+	invertedBytes := make([]byte, len(bytes))
+	for i := 0; i < rowCount; i++ {
+		srcRowStart := i * rowLength
+		srcRowEnd := (i + 1) * rowLength
+		dstRowStart := (int(rowCount) - 1 - i) * rowLength
+		dstRowEnd := (int(rowCount) - i) * rowLength
+		copy(invertedBytes[dstRowStart:dstRowEnd], bytes[srcRowStart:srcRowEnd])
+	}
+	return invertedBytes
+}
+
+// APP RENDER
+func drawCells(cells []app.Cell, cellsSettings app.CellSettings, palette []mgl32.Vec4, mesh graphics.Mesh) {
+	matrices := app.GetCellMatrices(cells, cellsSettings)
+	colors := app.GetCellColors(cells, cellsSettings, palette)
+	app.DrawMeshInstanced(mesh, matrices, colors, cellsSettings.Count)
+}
+
 func main() {
-	os.Mkdir(SAVES_DIR, os.ModeDir)
-	files, err := ioutil.ReadDir(SAVES_DIR)
-	
-	settingsMap := make(map[int]AppSettings, 0)
-	settingsNameList := make([]int, 0)
-	settingsList := make([]AppSettings, 0)
-	maxSaveNum := 0
-	for _, file := range files {
-		fileNameParts := strings.Split(file.Name(), "_")
-		fileNumString := "0"
-		if len(fileNameParts) > 1 {
-			fileNumString = fileNameParts[1]
-		}
-		fileNum, _ := strconv.Atoi(fileNumString)
-		
-		if maxSaveNum < fileNum {
-			maxSaveNum = fileNum
-		}
-		settingsMap[fileNum] = loadSettings(SAVES_DIR + "/" + file.Name())
-		settingsNameList = append(settingsNameList, fileNum)
-	}
-	sort.Ints(settingsNameList)
-	for _, settingName := range settingsNameList {
-		settingsList = append(settingsList, settingsMap[settingName])
-	}
-	
-	settings := loadSettings("settings")
+	settings, settingsCount := app.LoadSettings()
 	settingsTextures := make([]graphics.Texture, 0)
 
+	// WINDOW 
 	var windowWidth = 800
 	var windowHeight = 600
 	windowWidth, windowHeight = platform.GetMonitorResolution()
 	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", true)
 	defer platform.ReleaseWindow()
-
-	// Create screenshot dir
-	SCREENSHOT_DIR := "screenshots"
-	os.Mkdir(SCREENSHOT_DIR, os.ModeDir)
-	files, err = ioutil.ReadDir(SCREENSHOT_DIR)
-	maxScreenshotNum := 0
-	for _, file := range files {
-		fileNumString := strings.Split(file.Name(), ".")[0]
-		fileNum, _ := strconv.Atoi(fileNumString)
-
-		if maxScreenshotNum < fileNum {
-			maxScreenshotNum = fileNum
-		}
-	}
-
+	
+	// UI
 	truetypeTitleBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
 	if err != nil {
 		panic(err)
 	}
-
 	truetypeNormalBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
 	if err != nil {
 		panic(err)
 	}
-
 	scale := platform.GetWindowScaling()
 	uiFont := font.GetFont(truetypeNormalBytes, 20.0, scale)
 	uiFontTitle := font.GetFont(truetypeTitleBytes, 34.0, scale)
 	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
+	
+	// RENDERING (tied to UI)
 	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle, &settings.Rendering)
 
+	// UI
 	trashIconFile, err := os.Open("trash.png")
     if err != nil {
-        panic(err)
+		panic(err)
     }
-    defer trashIconFile.Close()
-
     trashIconImg, _, err := image.Decode(trashIconFile)
     if err != nil {
-        panic(err)
+		panic(err)
 	}
-	
+	trashIconFile.Close()
 	trashIconImgData := trashIconImg.(*image.NRGBA)
 	width, height := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
-	invertedBytes := make([]byte, len(trashIconImgData.Pix))
-	for i := 0; i < int(height); i++ {
-		srcRowStart := i * trashIconImgData.Stride
-		srcRowEnd := (i + 1) * trashIconImgData.Stride
-		dstRowStart := (int(height) - 1 - i) * trashIconImgData.Stride
-		dstRowEnd := (int(height) - i) * trashIconImgData.Stride
-		copy(invertedBytes[dstRowStart:dstRowEnd], trashIconImgData.Pix[srcRowStart:srcRowEnd])
-	}
-	
+	invertedBytes := InvertBytes(trashIconImgData.Pix, trashIconImgData.Stride, height)
 	trashIconTexture := graphics.GetTexture(width, height, 4, invertedBytes, true)
-
+	
+	// CELLS
+	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
+	cells := make([]app.Cell, 10000)
+	app.GenerateCells(cells)
 	colorChannel := make(chan []mgl32.Vec4, 1)
 
-	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
-	cells := make([]cell, 10000)
-	generateCells(cells)
-
+	// UI
 	// Circle constants
 	circleWidth := 0.75
 	circleWidthHover := 1.5
@@ -439,14 +237,14 @@ func main() {
 	loadBarColor := ColorParameter{circleColor, circleColor}
 	
 	loadBarDeleteButtonColors := make([]ColorParameter, 0)
-	for range settingsList {
+	for i := 0; i < settingsCount; i++ {
 		loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
 	}
 	
 	settingsColor := mgl32.Vec4{1,1,1,0.8}
 	settingsColorHover := mgl32.Vec4{1,1,1,1.0}
 	loadBarSettingsColors := make([]ColorParameter, 0)
-	for range settingsList {
+	for i := 0; i < settingsCount; i++ {
 		loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{settingsColor, settingsColor})
 	}
 	loadBarHide := FloatParameter{-loadBarWidth + loadBarHideWidth,-loadBarWidth + loadBarHideWidth}
@@ -477,9 +275,11 @@ func main() {
 	circleInnerHot, circleInnerActive := false, false
 	circleOuterHot, circleOuterActive := false, false
 
-	for i, _ := range settingsList {
-		drawCells(cells, settingsList[i].Cells, settingsList[i].Colors, cube)
-		camera := app.GetCamera(settingsList[i].Camera.Radius, settingsList[i].Camera.Azimuth, settingsList[i].Camera.Polar, settingsList[i].Camera.Height, 5.0)
+	// UI - depends on RENDERING
+	for i := 0; i < settingsCount; i++ {
+		settings := app.GetSettings(i)
+		drawCells(cells, settings.Cells, settings.Colors, cube)
+		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
 		app.SetCamera(camera)
 		app.Render()
 		
@@ -488,6 +288,7 @@ func main() {
 		settingsTextures = append(settingsTextures, texture)
 	}
 
+	// RENDERING
 	camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
 	app.SetCamera(camera)
 
@@ -496,14 +297,27 @@ func main() {
 		now := time.Now()
 		dt := now.Sub(start).Seconds()
 		start = now
-
+		platform.Update(window)
+		
+		// UI
 		fps := 0
 		if dt > 0.0 {
 			fps = int(1.0 / dt)
 		}
 
-		platform.Update(window)
-
+		// CELLS
+		if platform.IsKeyPressed(platform.KeyR) {
+			app.GenerateCells(cells)
+		}
+		if platform.IsKeyPressed(platform.KeyC) {
+			go func() {
+				newColors := app.GetRandomColorPalette()
+				if newColors != nil {
+					colorChannel <- newColors
+				}
+			}()
+		}
+		// UI
 		// Let's quit if user presses Esc, that cannot mean anything else.
 		if platform.IsKeyPressed(platform.KeyEscape) {
 			break
@@ -511,42 +325,23 @@ func main() {
 		if platform.IsKeyPressed(platform.KeyF2) {
 			showUI = !showUI
 		}
-		if platform.IsKeyPressed(platform.KeyR) {
-			generateCells(cells)
-		}
-		if platform.IsKeyPressed(platform.KeyC) {
-			go updateColorPalette(colorChannel)
-		}
+
+		// RENDERING
 		if platform.IsKeyPressed(platform.KeyF10) {
 			screenshotTextTimer = screenshotTextDuration
 			
 			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 			stride := len(imageBytes) / int(imageHeight)
-			invertedBytes := make([]byte, len(imageBytes))
-			for i := 0; i < int(imageHeight); i++ {
-				srcRowStart := i * stride
-				srcRowEnd := (i + 1) * stride
-				dstRowStart := (int(imageHeight) - 1 - i) * stride
-				dstRowEnd := (int(imageHeight) - i) * stride
-				copy(invertedBytes[dstRowStart:dstRowEnd], imageBytes[srcRowStart:srcRowEnd])
-			}
-
+			invertedBytes = InvertBytes(imageBytes, stride, int(imageHeight))
 			img := image.NewRGBA(image.Rect(0, 0, int(imageWidth), int(imageHeight)))
 			img.Pix = invertedBytes
 
-			maxScreenshotNum++
-			f, err := os.Create(SCREENSHOT_DIR + "/" + strconv.Itoa(maxScreenshotNum) + ".jpg")
-			if err != nil {
-				panic(err)
-			}
-
-			defer f.Close()
-			jpeg.Encode(f, img, nil)
+			app.SaveScreenshot(img)
 		}
 
+		// UI
 		if showUI {
 			// SSAO related settings.
-			//panel = ui.StartPanel("Rendering", mgl32.Vec2{10, panel.GetBottom() + 00}, 450)
 			panel := ui.StartPanel("Rendering", mgl32.Vec2{10, 10}, 450)
 			cellCountFloat, _ := panel.AddSlider("CellCount", float64(settings.Cells.Count), 0, 10000)
 			settings.Cells.Count = int(cellCountFloat)
@@ -574,16 +369,12 @@ func main() {
 		}
 		fpsString := fmt.Sprintf("%d", fps)
 		app.DrawText(fpsString, &infoFont, mgl32.Vec2{float32(windowWidth) - 10, float32(windowHeight) - 10}, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{1, 1}, 0)
-		//app.DrawText("IRIS", &infoFont, mgl32.Vec2{float32(windowWidth - 10), 10}, mgl32.Vec4{0.0, 0.0, 0.0, 0.8}, mgl32.Vec2{1, 0}, 0)
 		
 		// Show screenshot text.
-		screenshotTextPart := screenshotTextTimer / screenshotTextFadeDuration
-		alpha := float32(math.Sqrt(screenshotTextPart))
-		if alpha > 1.0 {
-			alpha = 1.0
-		}
+		screenshotTextPart := math.Min(screenshotTextTimer / screenshotTextFadeDuration, 1.0)
+		alpha := math.Sqrt(screenshotTextPart)
 		if alpha > 0.0 {
-			app.DrawText("IMAGE SAVED", &infoFont, mgl32.Vec2{float32(windowWidth) / 2.0, float32(windowHeight) - 10}, mgl32.Vec4{0.0, 0.0, 0.0, alpha * 0.8}, mgl32.Vec2{0.5, 1.0}, 0)
+			app.DrawText("IMAGE SAVED", &infoFont, mgl32.Vec2{float32(windowWidth) / 2.0, float32(windowHeight) - 10}, mgl32.Vec4{0.0, 0.0, 0.0, float32(alpha) * 0.8}, mgl32.Vec2{0.5, 1.0}, 0)
 		}
 		if screenshotTextTimer > 0.0 {
 			screenshotTextTimer -= dt
@@ -607,139 +398,129 @@ func main() {
 		pos := rS.Add(rD.Mul(s))
 		radius := math.Sqrt(float64(pos.X() * pos.X() + pos.Z() * pos.Z()))
 
-		if true {
-			loadBarPos := mgl32.Vec2{float32(loadBarHide.val), 0}
-			loadBarSize := mgl32.Vec2{float32(loadBarWidth), float32(windowHeight)}
+		loadBarPos := mgl32.Vec2{float32(loadBarHide.val), 0}
+		loadBarSize := mgl32.Vec2{float32(loadBarWidth), float32(windowHeight)}
 
-			aspectRatio := float32(windowHeight) / float32(windowWidth)
-			settingsSize := mgl32.Vec2{loadBarSize[0] - 20, (loadBarSize[0] - 20) * aspectRatio}
+		aspectRatio := float32(windowHeight) / float32(windowWidth)
+		settingsSize := mgl32.Vec2{loadBarSize[0] - 20, (loadBarSize[0] - 20) * aspectRatio}
 
-			saveSize := mgl32.Vec2{settingsSize[0], 50}
+		saveSize := mgl32.Vec2{settingsSize[0], 50}
+		
+		if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, loadBarPos, loadBarSize) {
+			loadBarHide.target = 0.0
+			scrollDelta := platform.GetMouseWheelDelta()
+			loadBarStart.target += scrollDelta * 50.0
+			if loadBarStart.target > 0 {
+				loadBarStart.target = 0.0
+			}
+
+			maxHeight := 10 + float64(settingsCount) * (float64(settingsSize[1]) + 10) + float64(saveSize[1] + 10)
+			lowerBorderMax := math.Max(0.0, float64(windowHeight) - maxHeight)
+			if float64(windowHeight) - (loadBarStart.target + maxHeight) > lowerBorderMax {
+				loadBarStart.target = float64(windowHeight) - lowerBorderMax - maxHeight
+			}
+			loadBarColor.target = circleColorHover
+		} else {
+			loadBarHide.target = -loadBarWidth + loadBarHideWidth
+			loadBarColor.target = inactiveUIColor
+		}
+
+		app.DrawRect(loadBarPos, loadBarSize, loadBarColor.val, 0)
+
+		for i := range loadBarDeleteButtonColors {
+			loadBarDeleteButtonColors[i].Update(dt, 8.0)
+			loadBarSettingsColors[i].Update(dt, 8.0)
+		}
+		loadBarStart.Update(dt, 10.0)
+		loadBarHide.Update(dt, 10.0)
+		loadBarColor.Update(dt, 4.0)
+
+		{
+			savePos := mgl32.Vec2{
+				(loadBarSize[0] - saveSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth), 10 + float32(loadBarStart.val),
+			}
+			saveColor := mgl32.Vec4{0,1,0.5,0.8}
+
+			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, savePos, saveSize) {
+				saveColor[3] = 1.0
+				if platform.IsMouseLeftButtonPressed() {
+					imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
+					texture := graphics.GetTexture(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
+					settingsTextures = append(settingsTextures, texture)
+					loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+					loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+
+					settingsCount = app.SaveSettings(settings)
+				}
+			} 
+			app.DrawRect(savePos, saveSize, saveColor, 0)
+
+			textPos := mgl32.Vec2{savePos[0] + saveSize[0] * 0.5, savePos[1] + saveSize[1] * 0.5}
+			app.DrawText("SAVE", &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.6}, mgl32.Vec2{0.5,0.5}, 1)
+		}
+
+		toRemove := -1
+		for i := 0; i < settingsCount; i++ {
+			settings := app.GetSettings(i)
+			settingsPos := mgl32.Vec2{
+				(loadBarSize[0] - settingsSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth),
+				float32(settingsCount - i) * 10 + float32(settingsCount - 1 - i) * settingsSize[1] + float32(loadBarStart.val)+ 10 + saveSize[1],
+			}
+
+			if settingsPos[0] + settingsSize[0] < 0.0 {
+				break
+			}
 			
-			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, loadBarPos, loadBarSize) {
-				loadBarHide.target = 0.0
-				scrollDelta := platform.GetMouseWheelDelta()
-				loadBarStart.target += scrollDelta * 50.0
-				if loadBarStart.target > 0 {
-					loadBarStart.target = 0.0
-				}
-
-				maxHeight := 10 + float64(len(settingsList)) * (float64(settingsSize[1]) + 10) + float64(saveSize[1] + 10)
-				lowerBorderMax := math.Max(0.0, float64(windowHeight) - maxHeight)
-				if float64(windowHeight) - (loadBarStart.target + maxHeight) > lowerBorderMax {
-					loadBarStart.target = float64(windowHeight) - lowerBorderMax - maxHeight
-				}
-				loadBarColor.target = circleColorHover
-			} else {
-				loadBarHide.target = -loadBarWidth + loadBarHideWidth
-				loadBarColor.target = inactiveUIColor
-			}
-
-			app.DrawRect(loadBarPos, loadBarSize, loadBarColor.val, 0)
-
-			for i := range loadBarDeleteButtonColors {
-				loadBarDeleteButtonColors[i].Update(dt, 8.0)
-				loadBarSettingsColors[i].Update(dt, 8.0)
-			}
-			loadBarStart.Update(dt, 10.0)
-			loadBarHide.Update(dt, 10.0)
-			loadBarColor.Update(dt, 4.0)
-
-			{
-				savePos := mgl32.Vec2{
-					(loadBarSize[0] - saveSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth), 10 + float32(loadBarStart.val),
-				}
-				saveColor := mgl32.Vec4{0,1,0.5,0.8}
-
-				if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, savePos, saveSize) {
-					saveColor[3] = 1.0
+			settingsColor[3] = 0.8
+			deleteButtonSize := mgl32.Vec2{70, settingsSize[1]}
+			deleteButtonPos := mgl32.Vec2{settingsPos[0] + settingsSize[0] - deleteButtonSize[0], settingsPos[1]}
+			
+			deleteButtonColor := loadBarDeleteButtonColors[i].val
+			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, settingsPos, settingsSize) {
+				loadBarSettingsColors[i].target = settingsColorHover
+				if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, deleteButtonPos, deleteButtonSize) {
+					loadBarDeleteButtonColors[i].target = deleteBarColorHover
 					if platform.IsMouseLeftButtonPressed() {
-						imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
-						texture := graphics.GetTexture(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
-						settingsTextures = append(settingsTextures, texture)
-						settingsNameList = append(settingsNameList, maxSaveNum)
-
-						maxSaveNum++
-						settingsName := "settings_" + strconv.Itoa(maxSaveNum)
-						newSettings := copySettings(&settings)
-						settingsList = append(settingsList, newSettings)
-						loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
-						loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
-						path := SAVES_DIR + "/" + settingsName
-						saveSettings(path, newSettings)
-					}
-				} 
-				app.DrawRect(savePos, saveSize, saveColor, 0)
-
-				textPos := mgl32.Vec2{savePos[0] + saveSize[0] * 0.5, savePos[1] + saveSize[1] * 0.5}
-				app.DrawText("SAVE", &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.6}, mgl32.Vec2{0.5,0.5}, 1)
-			}
-
-			toRemove := -1
-			for i := range settingsList {
-				settingsPos := mgl32.Vec2{
-					(loadBarSize[0] - settingsSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth),
-					float32(len(settingsList) - i) * 10 + float32(len(settingsList) - 1 - i) * settingsSize[1] + float32(loadBarStart.val)+ 10 + saveSize[1],
-				}
-
-				if settingsPos[0] + settingsSize[0] < 0.0 {
-					break
-				}
-				
-				settingsColor[3] = 0.8
-				deleteButtonSize := mgl32.Vec2{70, settingsSize[1]}
-				deleteButtonPos := mgl32.Vec2{settingsPos[0] + settingsSize[0] - deleteButtonSize[0], settingsPos[1]}
-				
-				deleteButtonColor := loadBarDeleteButtonColors[i].val
-				if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, settingsPos, settingsSize) {
-					loadBarSettingsColors[i].target = settingsColorHover
-					if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, deleteButtonPos, deleteButtonSize) {
-						loadBarDeleteButtonColors[i].target = deleteBarColorHover
-						if platform.IsMouseLeftButtonPressed() {
-							toRemove = i
-						}
-					} else {
-						loadBarDeleteButtonColors[i].target = deleteBarColor
-						if platform.IsMouseLeftButtonPressed() {
-							settings = copySettings(&settingsList[i])
-							camera.TargetRadius = settings.Camera.Radius
-							camera.TargetPolar = settings.Camera.Polar
-							camera.TargetAzimuth = settings.Camera.Azimuth
-							camera.TargetHeight = settings.Camera.Height
-							outerCircleRadius.target = settings.Cells.RadiusMax
-							countSliderValue.target = float64(settings.Cells.Count)
-							innerCircleRadius.target = settings.Cells.RadiusMin
-							for i := range colorsParams {
-								colorsParams[i].target = settings.Colors[i]
-							}
-						}
+						toRemove = i
 					}
 				} else {
-					loadBarDeleteButtonColors[i].target = deleteBarColorHidden
-					loadBarSettingsColors[i].target = settingsColor
+					loadBarDeleteButtonColors[i].target = deleteBarColor
+					if platform.IsMouseLeftButtonPressed() {
+						settings = app.GetSettings(i)
+						camera.TargetRadius = settings.Camera.Radius
+						camera.TargetPolar = settings.Camera.Polar
+						camera.TargetAzimuth = settings.Camera.Azimuth
+						camera.TargetHeight = settings.Camera.Height
+						outerCircleRadius.target = settings.Cells.RadiusMax
+						countSliderValue.target = float64(settings.Cells.Count)
+						innerCircleRadius.target = settings.Cells.RadiusMin
+						for i := range colorsParams {
+							colorsParams[i].target = settings.Colors[i]
+						}
+					}
 				}
-				app.DrawRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
-
-				trashCanSize := mgl32.Vec2{50, 50}
-				trashCanPos := mgl32.Vec2{deleteButtonPos[0] + deleteButtonSize[0] * 0.5 - trashCanSize[0] * 0.5, deleteButtonPos[1] + deleteButtonSize[1] * 0.5 - trashCanSize[1] * 0.5}
-				app.DrawRectTextured(trashCanPos, trashCanSize, trashIconTexture, mgl32.Vec4{1,1,1,deleteButtonColor[3]}, 1)
-
-				texture := settingsTextures[i]
-				app.DrawRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].val, 0)
-
-				textPos := mgl32.Vec2{settingsPos[0] + 10, settingsPos[1] + 5}
-				app.DrawText("#" + strconv.Itoa(i), &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{0,0}, 0)
+			} else {
+				loadBarDeleteButtonColors[i].target = deleteBarColorHidden
+				loadBarSettingsColors[i].target = settingsColor
 			}
+			app.DrawRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
 
-			if toRemove >= 0 {
-				settingsList = append(settingsList[:toRemove], settingsList[toRemove + 1:]...)
-				settingsTextures = append(settingsTextures[:toRemove], settingsTextures[toRemove + 1:]...)
-				loadBarDeleteButtonColors = append(loadBarDeleteButtonColors[:toRemove], loadBarDeleteButtonColors[toRemove + 1:]...)
-				loadBarSettingsColors = append(loadBarSettingsColors[:toRemove], loadBarSettingsColors[toRemove + 1:]...)
-				filePath := SAVES_DIR + "/settings_" + strconv.Itoa(settingsNameList[toRemove])
-				os.Remove(filePath)
-				settingsNameList = append(settingsNameList[:toRemove], settingsNameList[toRemove + 1:]...)
-			}
+			trashCanSize := mgl32.Vec2{50, 50}
+			trashCanPos := mgl32.Vec2{deleteButtonPos[0] + deleteButtonSize[0] * 0.5 - trashCanSize[0] * 0.5, deleteButtonPos[1] + deleteButtonSize[1] * 0.5 - trashCanSize[1] * 0.5}
+			app.DrawRectTextured(trashCanPos, trashCanSize, trashIconTexture, mgl32.Vec4{1,1,1,deleteButtonColor[3]}, 1)
+
+			texture := settingsTextures[i]
+			app.DrawRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].val, 0)
+
+			textPos := mgl32.Vec2{settingsPos[0] + 10, settingsPos[1] + 5}
+			app.DrawText("#" + strconv.Itoa(i), &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{0,0}, 0)
+		}
+
+		if toRemove >= 0 {
+			settingsCount = app.DeleteSettings(toRemove)
+			settingsTextures = append(settingsTextures[:toRemove], settingsTextures[toRemove + 1:]...)
+			loadBarDeleteButtonColors = append(loadBarDeleteButtonColors[:toRemove], loadBarDeleteButtonColors[toRemove + 1:]...)
+			loadBarSettingsColors = append(loadBarSettingsColors[:toRemove], loadBarSettingsColors[toRemove + 1:]...)
 		}
 
 		mouseAngle := math.Atan2(float64(pos.X()), float64(pos.Z()))
@@ -855,7 +636,7 @@ func main() {
 		// Swappity-swap.
 		window.SwapBuffers()
 	}
-	saveSettings("settings", settings)
+	app.SaveActiveSettings(settings)
 }
 
 var cubeVertices = [...]float32{

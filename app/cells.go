@@ -47,16 +47,13 @@ func radiusToRadiusMax(radius float64) float64 {
 }
 
 
-func GetCellMatrices(cells []Cell, cellsSettings CellSettings) []mgl32.Mat4{
-	radiusMin := radiusToRadiusMin(cellsSettings.RadiusMin)
-	radiusMax := radiusToRadiusMax(cellsSettings.RadiusMax)
-	polarStd := cellsSettings.PolarStd
-	polarMean := cellsSettings.PolarMean
-	heightRatio := cellsSettings.HeightRatio
+func GetCellMatrices(cells []Cell, radiusMin, radiusMax, polarStd, polarMean, heightRatio float64, count int) []mgl32.Mat4{
+	radiusMin = radiusToRadiusMin(radiusMin)
+	radiusMax = radiusToRadiusMax(radiusMax)
 
-	matrices := make([]mgl32.Mat4, cellsSettings.Count)
+	matrices := make([]mgl32.Mat4, count)
 	
-	for i, cell := range cells[:cellsSettings.Count] {
+	for i, cell := range cells[:count] {
 		polar := cell.polar * polarStd + polarMean
 		angle := cell.angle
 
@@ -79,10 +76,10 @@ func GetCellMatrices(cells []Cell, cellsSettings CellSettings) []mgl32.Mat4{
 	return matrices
 }
 
-func GetCellColors(cells []Cell, cellsSettings CellSettings) []mgl32.Vec4{
-	colors := make([]mgl32.Vec4, cellsSettings.Count)
-	for i, cell := range cells[:cellsSettings.Count] {
-		colors[i] = cellsSettings.Colors[cell.colorIndex].Mul(cell.colorModifier)
+func GetCellColors(cells []Cell, colorPalette []mgl32.Vec4, count int) []mgl32.Vec4{
+	colors := make([]mgl32.Vec4, count)
+	for i, cell := range cells[:count] {
+		colors[i] = colorPalette[cell.colorIndex].Mul(cell.colorModifier)
 
 	}
 	return colors

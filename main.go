@@ -49,27 +49,6 @@ func (value *FloatParameter) Update(dt, speed float64) {
 	value.val += (value.target - value.val) * dt * speed
 }
 
-type RadianParameter struct {
-	val, target float64
-}
-
-func (value *RadianParameter) Update(dt, speed float64) {
-	if value.target - value.val > math.Pi {
-		value.target -= math.Pi * 2.0
-	} else if value.val - value.target > math.Pi {
-		value.target += math.Pi * 2.0
-	}
-	value.val += (value.target - value.val) * dt * speed
-	if value.val > math.Pi * 2.0 && value.target > math.Pi * 2.0 {
-		value.val -= math.Pi * 2.0
-		value.target -= math.Pi * 2.0
-	}
-	if value.val < 0 && value.target < 0 {
-		value.val += math.Pi * 2.0
-		value.target += math.Pi * 2.0
-	}
-}
-
 func uiItemControl(hover, hot, active bool) (bool, bool) {
 	if hover {
 		hot = true
@@ -88,7 +67,7 @@ func uiItemControl(hover, hot, active bool) (bool, bool) {
 	return hot, active
 }
 
-func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32) {
+func getCircleMesh(radius float64, width float64, arch float64) ([]float32, []uint32) {
 	pointCount := uint32(128)
 
 	vertices := make([]float32, 0)
@@ -96,7 +75,6 @@ func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32
 
 	archLength := math.Pi / 4.0
 	for i := uint32(0); i < pointCount; i++ {
-		//angle := float64(i) * math.Pi * 2.0 / float64(pointCount)
 		angle := float64(i) * archLength / float64(pointCount) + arch - archLength / 2.0
 		xInner := float32(math.Sin(angle) * (radius - width))
 		zInner := float32(math.Cos(angle) * (radius - width))
@@ -115,7 +93,6 @@ func getCircle(radius float64, width float64, arch float64) ([]float32, []uint32
 			indices = append(indices, index, index+3, index+2)
 		}
 	}
-
 	return vertices, indices
 }
 
@@ -142,8 +119,9 @@ func InvertBytes (bytes []byte, rowLength, rowCount int) []byte{
 
 // APP RENDER
 func drawCells(cells []app.Cell, cellsSettings app.CellSettings, mesh graphics.Mesh) {
-	matrices := app.GetCellMatrices(cells, cellsSettings)
-	colors := app.GetCellColors(cells, cellsSettings)
+	matrices := app.GetCellMatrices(cells, cellsSettings.RadiusMin, cellsSettings.RadiusMax, cellsSettings.PolarStd,
+		cellsSettings.PolarMean,cellsSettings.HeightRatio, cellsSettings.Count)
+	colors := app.GetCellColors(cells, cellsSettings.Colors, cellsSettings.Count)
 	app.DrawMeshInstanced(mesh, matrices, colors, cellsSettings.Count)
 }
 
@@ -196,73 +174,67 @@ func main() {
 	app.GenerateCells(cells)
 	colorChannel := make(chan []mgl32.Vec4, 1)
 
-	// UI
-	// Circle constants
-	circleWidth := 0.75
-	circleWidthHover := 1.5
-	circleColor := mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
-	circleColorHover := mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
-	circleColorFade := mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
-	circleFadeOutTime := 0.5
-	screenshotTextDuration := 1.75
-	screenshotTextFadeDuration := 1.0
-
-	countSliderBgSize := mgl32.Vec2{100.0, float32(windowHeight) * 0.7}
-	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 100, float32(windowHeight) * 0.15}
-	
-	// Count controller parameters
-	countSliderColor := ColorParameter{circleColor, circleColor}
-	countSliderValue := FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
-
-	// Inner controller circle parameters
-	innerCircleColor := ColorParameter{circleColor, circleColor}
-	innerCircleWidth := FloatParameter{circleWidth, circleWidth}
-	innerCircleRadius := FloatParameter{settings.Cells.RadiusMin, settings.Cells.RadiusMin}
-	innerCircleArch := RadianParameter{0, 0}
-	
-	// Outer controller circle parameters
-	outerCircleColor := ColorParameter{circleColor, circleColor}
-	outerCircleWidth := FloatParameter{circleWidth, circleWidth}
-	outerCircleRadius := FloatParameter{settings.Cells.RadiusMax, settings.Cells.RadiusMax}
-	outerCircleArch := RadianParameter{0, 0}
-
-	// Load bar parameters
-	loadBarWidth := 500.0
-	loadBarHideWidth := 50.0
-	loadBarStart := FloatParameter{0,0}
-	deleteBarColor := mgl32.Vec4{1, 0, 0, 0.5}
-	deleteBarColorHover := mgl32.Vec4{1, 0, 0, 0.9}
-	deleteBarColorHidden := mgl32.Vec4{0,0,0,0}
-	
-	loadBarColor := ColorParameter{circleColor, circleColor}
-	
-	loadBarDeleteButtonColors := make([]ColorParameter, 0)
-	for i := 0; i < settingsCount; i++ {
-		loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
-	}
-	
-	settingsColor := mgl32.Vec4{1,1,1,0.8}
-	settingsColorHover := mgl32.Vec4{1,1,1,1.0}
-	loadBarSettingsColors := make([]ColorParameter, 0)
-	for i := 0; i < settingsCount; i++ {
-		loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{settingsColor, settingsColor})
-	}
-	loadBarHide := FloatParameter{-loadBarWidth + loadBarHideWidth,-loadBarWidth + loadBarHideWidth}
-
 	// Colors parameters
 	colorsParams := make([]ColorParameter, 0)
 	for _, color := range settings.Cells.Colors {
 		colorsParams = append(colorsParams, ColorParameter{color, color})
 	}
 
-	// Inner circle mesh
-	circleVertices, circleIndices := getCircle(innerCircleRadius.val, innerCircleWidth.val, innerCircleArch.val)
+	// CIRCLE
+	// Circle constants
+	circleWidth := 0.75
+	circleWidthHover := 1.5
+	uiColor := mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
+	uiColorHover := mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
+	uiColorInactive := mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
+	uiFadeOutTime := 0.5
+
+	// Inner controller circle parameters
+	innerCircle := app.GetCircle(uiColor, circleWidth, settings.Cells.RadiusMin, 0)
+	circleInnerHot, circleInnerActive := false, false
+	circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
 	circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-	
-	// Outer circle mesh
-	circleVertices, circleIndices = getCircle(outerCircleRadius.val, outerCircleWidth.val, outerCircleArch.val)
+
+	// Outer controller circle parameters
+	outerCircle := app.GetCircle(uiColor, circleWidth, settings.Cells.RadiusMax, 0)
+	circleOuterHot, circleOuterActive := false, false
+	circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
 	circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+
+	// SCREENSHOTS
+	screenshotTextDuration := 1.75
+	screenshotTextFadeDuration := 1.0
+
+	// COUNTS
+	countSliderBgSize := mgl32.Vec2{100.0, float32(windowHeight) * 0.7}
+	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 100, float32(windowHeight) * 0.15}
 	
+	// Count controller parameters
+	countSliderColor := ColorParameter{uiColor, uiColor}
+	countSliderValue := FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
+	countSliderHot, countSliderActive := false, false
+
+	// LOAD BAR
+	// Load bar constants
+	settingsColor := mgl32.Vec4{1,1,1,0.8}
+	settingsColorHover := mgl32.Vec4{1,1,1,1.0}
+	loadBarWidth := 500.0
+	loadBarHideWidth := 50.0
+	deleteBarColor := mgl32.Vec4{1, 0, 0, 0.5}
+	deleteBarColorHover := mgl32.Vec4{1, 0, 0, 0.9}
+	deleteBarColorHidden := mgl32.Vec4{0,0,0,0}
+	
+	// Load bar parameters
+	loadBarStart := FloatParameter{0,0}
+	loadBarColor := ColorParameter{uiColor, uiColor}
+	loadBarDeleteButtonColors := make([]ColorParameter, 0)
+	loadBarSettingsColors := make([]ColorParameter, 0)
+	for i := 0; i < settingsCount; i++ {
+		loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+		loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{settingsColor, settingsColor})
+	}
+	loadBarHide := FloatParameter{-loadBarWidth + loadBarHideWidth,-loadBarWidth + loadBarHideWidth}
+
 	// Runtime variables
 	showUI := false
 	pickerStates := make([]bool, len(settings.Cells.Colors))
@@ -271,11 +243,7 @@ func main() {
 	timeSinceMouseMovement := 0.0
 	screenshotTextTimer := 0.0
 	
-	countSliderHot, countSliderActive := false, false
-	circleInnerHot, circleInnerActive := false, false
-	circleOuterHot, circleOuterActive := false, false
-
-	// UI - depends on RENDERING
+		// UI - depends on RENDERING
 	for i := 0; i < settingsCount; i++ {
 		settings := app.GetSettings(i)
 		drawCells(cells, settings.Cells, cube)
@@ -317,6 +285,17 @@ func main() {
 				}
 			}()
 		}
+		select {
+		case newColors := <-colorChannel:
+			for i := range colorsParams {
+				colorsParams[i].target = newColors[i]
+			}
+		default:
+		}
+		for i := range settings.Cells.Colors {
+			colorsParams[i].Update(dt, 5.0)
+			settings.Cells.Colors[i] = colorsParams[i].val
+		}
 		// UI
 		// Let's quit if user presses Esc, that cannot mean anything else.
 		if platform.IsKeyPressed(platform.KeyEscape) {
@@ -326,7 +305,7 @@ func main() {
 			showUI = !showUI
 		}
 
-		// RENDERING
+		// SCREENSHOTS
 		if platform.IsKeyPressed(platform.KeyF10) {
 			screenshotTextTimer = screenshotTextDuration
 			
@@ -380,6 +359,7 @@ func main() {
 			screenshotTextTimer -= dt
 		}
 
+		// UI
 		mdx, mdy := platform.GetMouseDeltaPosition()
 		if math.Abs(mdx) < 0.001 && math.Abs(mdy) < 0.001 {
 			timeSinceMouseMovement += dt
@@ -387,23 +367,18 @@ func main() {
 			timeSinceMouseMovement = 0.0
 		}
 
-		inactiveUIColor := circleColor
-		if timeSinceMouseMovement > circleFadeOutTime {
-			inactiveUIColor = circleColorFade
+		mouseX, mouseY := platform.GetMousePosition()
+		inactiveUIColor := uiColor
+		if timeSinceMouseMovement > uiFadeOutTime {
+			inactiveUIColor = uiColorInactive
 		}
 		
-		mouseX, mouseY := platform.GetMousePosition()
-		rS, rD := app.GetWorldRay(mouseX, mouseY)
-		s := 0.0 - rS.Y() / rD.Y()
-		pos := rS.Add(rD.Mul(s))
-		radius := math.Sqrt(float64(pos.X() * pos.X() + pos.Z() * pos.Z()))
-
+		// LOAD BAR
 		loadBarPos := mgl32.Vec2{float32(loadBarHide.val), 0}
 		loadBarSize := mgl32.Vec2{float32(loadBarWidth), float32(windowHeight)}
-
 		aspectRatio := float32(windowHeight) / float32(windowWidth)
+		
 		settingsSize := mgl32.Vec2{loadBarSize[0] - 20, (loadBarSize[0] - 20) * aspectRatio}
-
 		saveSize := mgl32.Vec2{settingsSize[0], 50}
 		
 		if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, loadBarPos, loadBarSize) {
@@ -419,7 +394,7 @@ func main() {
 			if float64(windowHeight) - (loadBarStart.target + maxHeight) > lowerBorderMax {
 				loadBarStart.target = float64(windowHeight) - lowerBorderMax - maxHeight
 			}
-			loadBarColor.target = circleColorHover
+			loadBarColor.target = uiColorHover
 		} else {
 			loadBarHide.target = -loadBarWidth + loadBarHideWidth
 			loadBarColor.target = inactiveUIColor
@@ -491,9 +466,9 @@ func main() {
 						camera.TargetPolar = settings.Camera.Polar
 						camera.TargetAzimuth = settings.Camera.Azimuth
 						camera.TargetHeight = settings.Camera.Height
-						outerCircleRadius.target = settings.Cells.RadiusMax
 						countSliderValue.target = float64(settings.Cells.Count)
-						innerCircleRadius.target = settings.Cells.RadiusMin
+						outerCircle.Radius.Target = settings.Cells.RadiusMax
+						innerCircle.Radius.Target = settings.Cells.RadiusMin
 						for i := range colorsParams {
 							colorsParams[i].target = settings.Cells.Colors[i]
 						}
@@ -522,67 +497,69 @@ func main() {
 			loadBarDeleteButtonColors = append(loadBarDeleteButtonColors[:toRemove], loadBarDeleteButtonColors[toRemove + 1:]...)
 			loadBarSettingsColors = append(loadBarSettingsColors[:toRemove], loadBarSettingsColors[toRemove + 1:]...)
 		}
+		
+		// CIRCLE
+		// Calculate mouse position in world space (considering pos 0 on y-axis).
+		rS, rD := app.GetWorldRay(mouseX, mouseY)
+		posY := float32(0.0)
+		s := posY - rS.Y() / rD.Y()
+		pos := rS.Add(rD.Mul(s))
 
 		mouseAngle := math.Atan2(float64(pos.X()), float64(pos.Z()))
-		innerCircleArch.target = mouseAngle
-		outerCircleArch.target = mouseAngle
+		radius := math.Sqrt(float64(pos.X() * pos.X() + pos.Z() * pos.Z()))
+		
 		{
-			circleInnerHover := math.Abs(innerCircleRadius.val - radius) < 4.0
-			circleInnerHot, circleInnerActive = uiItemControl(circleInnerHover, circleInnerHot, circleInnerActive)
+			hover := math.Abs(innerCircle.Radius.Val - radius) < 4.0
+			circleInnerHot, circleInnerActive = uiItemControl(hover, circleInnerHot, circleInnerActive)
+			// Update circle state.
 			if circleInnerHot || circleInnerActive {
-				innerCircleColor.target = circleColorHover
-				innerCircleWidth.target = circleWidthHover
+				innerCircle.Color.Target = uiColorHover
+				innerCircle.Width.Target = circleWidthHover
 			} else {
-				innerCircleColor.target = inactiveUIColor
-				innerCircleWidth.target = circleWidth
+				innerCircle.Color.Target = inactiveUIColor
+				innerCircle.Width.Target = circleWidth
 			}
 			if circleInnerActive {
-				innerCircleRadius.target = math.Min(radius, outerCircleRadius.target)
+				innerCircle.Radius.Target = math.Max(3.0, math.Min(radius, outerCircle.Radius.Target))
 			}
-			settings.Cells.RadiusMin = innerCircleRadius.val
-
-			innerCircleWidth.Update(dt, 10.0)
-			innerCircleRadius.Update(dt, 15.0)
-			innerCircleColor.Update(dt, 4.0)
-			innerCircleArch.Update(dt, 6.0)
-
-			circleVertices, circleIndices := getCircle(innerCircleRadius.val, innerCircleWidth.val, innerCircleArch.val)
+			innerCircle.Arc.Target = mouseAngle
+			innerCircle.Update(dt)
+			
+			circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
 			circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-
-			modelMatrix := mgl32.Ident4()
-			app.DrawMeshUI(circleInner, modelMatrix, innerCircleColor.val)
+			app.DrawMeshUI(circleInner, mgl32.Ident4(), innerCircle.Color.Val)
 		}
+		settings.Cells.RadiusMin = innerCircle.Radius.Val
+
 		{
-			circleOuterHover :=  math.Abs(outerCircleRadius.val - radius) < 4.0
-			circleOuterHot, circleOuterActive = uiItemControl(circleOuterHover, circleOuterHot, circleOuterActive)
+			hover := math.Abs(outerCircle.Radius.Val - radius) < 4.0
+			circleOuterHot, circleOuterActive = uiItemControl(hover, circleOuterHot, circleOuterActive)
+			// Update circle state.
 			if circleOuterHot || circleOuterActive {
-				outerCircleColor.target = circleColorHover
-				outerCircleWidth.target = circleWidthHover
+				outerCircle.Color.Target = uiColorHover
+				outerCircle.Width.Target = circleWidthHover
 			} else {
-				outerCircleColor.target = inactiveUIColor
-				outerCircleWidth.target = circleWidth
+				outerCircle.Color.Target = inactiveUIColor
+				outerCircle.Width.Target = circleWidth
 			}
 			if circleOuterActive {
-				outerCircleRadius.target = math.Max(radius, innerCircleRadius.target)
+				outerCircle.Radius.Target = math.Max(innerCircle.Radius.Target, math.Min(radius, 1000.0))
 			}
-			settings.Cells.RadiusMax = outerCircleRadius.val
-
-			outerCircleWidth.Update(dt, 10.0)
-			outerCircleRadius.Update(dt, 15.0)
-			outerCircleColor.Update(dt, 4.0)
-			outerCircleArch.Update(dt, 6.0)
-
-			circleVertices, circleIndices = getCircle(outerCircleRadius.val, outerCircleWidth.val, outerCircleArch.val)
-			circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+			outerCircle.Arc.Target = mouseAngle
+			outerCircle.Update(dt)
 			
-			modelMatrix := mgl32.Ident4()
-			app.DrawMeshUI(circleOuter, modelMatrix, outerCircleColor.val)
+			circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
+			circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+			app.DrawMeshUI(circleOuter, mgl32.Ident4(), outerCircle.Color.Val)
 		}
+		settings.Cells.RadiusMax = outerCircle.Radius.Val
+
+		// COUNT
 		{
 			countSliderHover := isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, countSliderBgPos, countSliderBgSize)
 			countSliderHot, countSliderActive = uiItemControl(countSliderHover, countSliderHot, countSliderActive)
 			if countSliderHot || countSliderActive {
-				countSliderColor.target = circleColorHover
+				countSliderColor.target = uiColorHover
 			} else {
 				countSliderColor.target = inactiveUIColor
 			}
@@ -593,34 +570,22 @@ func main() {
 				} else if portion > 1.0 {
 					portion = 1.0
 				}
+				portion = float32(math.Max(0.0, math.Min(float64(portion), 1.0)))
 				countSliderValue.target = float64(portion) * 10000.0
 			}
 			settings.Cells.Count = int(countSliderValue.val)
 			if settings.Cells.Count > 10000 {
 				settings.Cells.Count = 10000
 			}
-			portion := float32(countSliderValue.val) / 10000.0
-
 			countSliderColor.Update(dt, 5.0)
 			countSliderValue.Update(dt, 15.0)
-
+			
+			portion := float32(countSliderValue.val) / 10000.0
 			countSliderSize := mgl32.Vec2{countSliderBgSize[0], countSliderBgSize[1] * portion}
 			countSliderPos := mgl32.Vec2{countSliderBgPos[0], countSliderBgPos[1] + countSliderBgSize[1] - countSliderSize[1]}
 
 			app.DrawRect(countSliderBgPos, countSliderBgSize, countSliderColor.val, 0)
 			app.DrawRect(countSliderPos, countSliderSize, countSliderColor.val, 0)
-		}
-
-		select {
-		case newColors := <-colorChannel:
-			for i := range colorsParams {
-				colorsParams[i].target = newColors[i]
-			}
-		default:
-		}
-		for i := range settings.Cells.Colors {
-			settings.Cells.Colors[i] = colorsParams[i].val
-			colorsParams[i].Update(dt, 5.0)
 		}
 
 		drawCells(cells, settings.Cells, cube)

@@ -1,7 +1,8 @@
 =========================
 DOING
 =========================
-- CellSettings to cells.go and rename to CellConfig/CellSpec/CellParams
+- circle UI function
+- load bar functions
 - do app specific UI properly
 
 =========================

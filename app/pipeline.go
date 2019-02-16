@@ -52,7 +52,7 @@ func GetPipeline(vertexShaderFile, pixelShaderFile string) Pipeline {
 		return Pipeline{}
 	}
 	
-	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VERTEX_SHADER)
+	vertexShader, err := graphics.GetShader(string(vertexShaderData), graphics.VertexShader)
 	if err != nil {
 		fmt.Println(err)
 		return Pipeline{}
@@ -64,7 +64,7 @@ func GetPipeline(vertexShaderFile, pixelShaderFile string) Pipeline {
 		return Pipeline{}
 	}
 
-	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PIXEL_SHADER)
+	pixelShader, err := graphics.GetShader(string(pixelShaderData), graphics.PixelShader)
 	if err != nil {
 		fmt.Println(err)
 		return Pipeline{}

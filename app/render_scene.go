@@ -72,34 +72,34 @@ var near, far float32 = 0.01, 500.0
 func setUpBuffers(buffers *SceneBuffers, width, height int32) {
 	buffers.bufferScene = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {
-			"direct": []int32{gl.RGBA32F, 0},
-			"ambient": []int32{gl.RGBA32F, 1},
+		map[string]int32 {
+			"direct": gl.RGBA32F,
+			"ambient": gl.RGBA32F,
 		}, true)
 	buffers.bufferSceneMS = graphics.GetFramebuffer(
 		width, height, 4,
-		map[string][]int32 {
-			"direct": []int32{gl.RGBA32F, 0},
-			"ambient": []int32{gl.RGBA32F, 1},
+		map[string]int32 {
+			"direct": gl.RGBA32F,
+			"ambient": gl.RGBA32F,
 		}, true)
 	buffers.bufferGeometry = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {
-			"position": []int32{gl.RGBA32F, 0},
-			"normal": []int32{gl.RGBA32F, 1},
+		map[string]int32 {
+			"position": gl.RGBA32F,
+			"normal": gl.RGBA32F,
 		}, true)
 	buffers.bufferSSAO = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {"occlusion": []int32{gl.R32F, 0}}, false)
+		map[string]int32 {"occlusion": gl.R32F}, false)
 	buffers.bufferBlur = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {"occlusion": []int32{gl.R32F, 0}}, false)
+		map[string]int32 {"occlusion": gl.R32F}, false)
 	buffers.bufferShading = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {"color": []int32{gl.RGBA8, 0}}, false)
+		map[string]int32 {"color": gl.RGBA8}, false)
 	buffers.bufferEffect = graphics.GetFramebuffer(
 		width, height, 1,
-		map[string][]int32 {"color": []int32{gl.RGBA8, 0}}, false)
+		map[string]int32 {"color": gl.RGBA8}, false)
 	
 }
 
@@ -142,8 +142,8 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 
 	rendering = renderingSettings
 
-	instanceColorBuffer = graphics.GetInstanceBufferFloat32(4)
-	instanceModelBuffer = graphics.GetInstanceBufferFloat32(16)
+	instanceColorBuffer = graphics.GetInstanceBuffer(4)
+	instanceModelBuffer = graphics.GetInstanceBuffer(16)
 }
 
 func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstanced) graphics.Framebuffer {

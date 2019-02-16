@@ -131,7 +131,7 @@ func getGlyphSourceRect(glyph font.Glyph, textureSize float64) mgl32.Vec4{
 func getFontTexture(font *font.Font) graphics.Texture {
 	texture, ok := textureCache[font]
 	if !ok {
-		texture = graphics.GetTexture(uiFontTextureSize, uiFontTextureSize, 1, font.Texture, true)
+		texture = graphics.GetTextureUint8(uiFontTextureSize, uiFontTextureSize, 1, font.Texture, true)
 		textureCache[font] = texture
 	}
 	return texture

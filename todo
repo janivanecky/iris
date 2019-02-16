@@ -1,26 +1,32 @@
 =========================
 DOING
 =========================
-- circle UI function
-- load bar functions
-- do app specific UI properly
+- cleanup libs
+    - font.go
 
 =========================
 TODO
 =========================
 MAINTENANCE
 - remove global states?
+- circle UI function
+- load bar functions
+- do app specific UI properly
 - cleanup shaders
 - cleanup UI.go
 - cleanup render_xxx.go
-- cleanup libs
 - cleanup main.go
 - optimize so running 60fps on integrated card
 - redo as async systems?
 - camera shouldn't communicate with UI
+- input.go can be potentially significantly reduced
+- DPI scaling cleanup
+- need to use DelTexture
 
 FEATURES
-- better slider
+- better slider (needs a replacement)
+- make window movable and exitable by click
+- add key shortcuts help
 - UI for selecting colors (with pre-fetching)
 - on click reaction (color/width)
 
@@ -33,6 +39,7 @@ FEATURES
 
 NEEDS FIX
 - Banding SSAO?
+- If save bar extended and mouse goes outside, flickering
 
 MAYBE NOT?
 - instanced text rendering?
@@ -41,10 +48,21 @@ MAYBE NOT?
 =========================
 DONE
 =========================
-21/10/19
+15/02/19
+- clean graphics.go
+- clean framebuffer.go
+- clean shaders.go
+- clean mesh.go
+- clean instanced_buffer.go
+
+14/02/19
+- clean texture.go
+- clean platform.go
+
+21/10/18
 - colors to CellSettings
 
-19/10/19
+19/10/18
 - separate cell generation from main
 
 18/10/18
@@ -280,31 +298,3 @@ DONE
 - simple vertex shader
 - simple pixel shader
 - quad mesh
-
-
-=========================
-Goal
-=========================
-Resulting application should enable quickly creating interesting visualizations based on the familiar pattern.
-
-Requires:
-- Graphics lib
-- Math lib
-- Fancy shaders
-- The app itself
-
-=========================
-Milestones
-=========================
-
-*1*
-- Rendering of a 3D model with simple phong model
-
-*2*
-- Rendering of text and rects
-
-*3*
-- Fancy shaders
-
-*4*
-- First version of the app - having an option of changing colors/smodels

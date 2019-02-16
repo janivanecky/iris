@@ -132,8 +132,8 @@ func main() {
 	// WINDOW 
 	var windowWidth = 800
 	var windowHeight = 600
-	windowWidth, windowHeight = platform.GetMonitorResolution()
-	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", true)
+	//windowWidth, windowHeight = platform.GetMonitorResolution()
+	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", false)
 	defer platform.ReleaseWindow()
 	
 	// UI
@@ -166,7 +166,7 @@ func main() {
 	trashIconImgData := trashIconImg.(*image.NRGBA)
 	width, height := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
 	invertedBytes := InvertBytes(trashIconImgData.Pix, trashIconImgData.Stride, height)
-	trashIconTexture := graphics.GetTexture(width, height, 4, invertedBytes, true)
+	trashIconTexture := graphics.GetTextureUint8(width, height, 4, invertedBytes, true)
 	
 	// CELLS
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
@@ -252,7 +252,7 @@ func main() {
 		app.Render()
 		
 		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
-		texture := graphics.GetTexture(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
+		texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 		settingsTextures = append(settingsTextures, texture)
 	}
 
@@ -420,7 +420,7 @@ func main() {
 				saveColor[3] = 1.0
 				if platform.IsMouseLeftButtonPressed() {
 					imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
-					texture := graphics.GetTexture(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
+					texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 					settingsTextures = append(settingsTextures, texture)
 					loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
 					loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})

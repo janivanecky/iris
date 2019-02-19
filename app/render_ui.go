@@ -10,12 +10,11 @@ import (
 )
 
 // Pipelines used for UI rendering.
-var uiTextPipeline Pipeline
-var uiRectTexturePipeline Pipeline
-var uiRectPipeline Pipeline
+var uiTextPipeline graphics.Pipeline
+var uiRectTexturePipeline graphics.Pipeline
+var uiRectPipeline graphics.Pipeline
 
 // Additional settings/data necessary for UI rendering.
-const uiFontTextureSize = 1024
 var uiQuad graphics.Mesh
 var uiProjectionMatrix mgl32.Mat4
 var uiScreenHeight float64
@@ -29,9 +28,9 @@ func initUIRendering(uiFont font.Font, windowWidth, windowHeight float64) {
 	uiProjectionMatrix = mgl32.Ortho(0.0, float32(windowWidth), 0.0, float32(windowHeight), 10.0, -10.0)
 
 	// Pipelines initialization
-	uiTextPipeline = GetPipeline("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
-	uiRectPipeline = GetPipeline("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
-	uiRectTexturePipeline = GetPipeline("shaders/text_vertex_shader.glsl", "shaders/rect_texture_pixel_shader.glsl")
+	uiTextPipeline = graphics.GetPipeline("shaders/text_vertex_shader.glsl", "shaders/text_pixel_shader.glsl")
+	uiRectPipeline = graphics.GetPipeline("shaders/rect_vertex_shader.glsl", "shaders/rect_pixel_shader.glsl")
+	uiRectTexturePipeline = graphics.GetPipeline("shaders/text_vertex_shader.glsl", "shaders/rect_texture_pixel_shader.glsl")
 
 	// Set up texture cache.
 	textureCache = make(map[*font.Font] graphics.Texture)
@@ -94,7 +93,7 @@ func getModelMatrix(x, y, sx, sy float32) mgl32.Mat4 {
 	return modelMatrix
 }
 
-func drawRect(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {
+func drawRect(pipeline graphics.Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {
 	// Set up transformation parameters.
 	x, y := pos[0], float32(uiScreenHeight) - pos[1]
 	sx, sy := size[0], size[1]
@@ -106,7 +105,7 @@ func drawRect(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Ve
 	graphics.DrawMesh(uiQuad)
 }
 
-func drawRectTexture(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, texture graphics.Texture, color mgl32.Vec4) {
+func drawRectTexture(pipeline graphics.Pipeline, pos mgl32.Vec2, size mgl32.Vec2, texture graphics.Texture, color mgl32.Vec4) {
 	// Set up transformation parameters.
 	x, y := pos[0], float32(uiScreenHeight) - pos[1]
 	sx, sy := size[0], size[1]
@@ -120,31 +119,31 @@ func drawRectTexture(pipeline Pipeline, pos mgl32.Vec2, size mgl32.Vec2, texture
 	graphics.DrawMesh(uiQuad)
 }
 
-func getGlyphSourceRect(glyph font.Glyph, textureSize float64) mgl32.Vec4{
-	relX := float32(glyph.X) / float32(textureSize)
-	relY := 1.0 - float32(glyph.Y + glyph.BitmapHeight) / float32(textureSize)
-	relWidth := float32(glyph.BitmapWidth) / float32(textureSize)
-	relHeight := float32(glyph.BitmapHeight) / float32(textureSize)
+func getGlyphSourceRect(glyph font.Glyph, textureWidth, textureHeight int) mgl32.Vec4{
+	relX := float32(glyph.X) / float32(textureWidth)
+	relY := 1.0 - float32(glyph.Y + glyph.BitmapHeight) / float32(textureHeight)
+	relWidth := float32(glyph.BitmapWidth) / float32(textureWidth)
+	relHeight := float32(glyph.BitmapHeight) / float32(textureHeight)
 	return mgl32.Vec4{relX,relY,relWidth,relHeight}
 }
 
 func getFontTexture(font *font.Font) graphics.Texture {
 	texture, ok := textureCache[font]
 	if !ok {
-		texture = graphics.GetTextureUint8(uiFontTextureSize, uiFontTextureSize, 1, font.Texture, true)
+		texture = graphics.GetTextureUint8(font.TextureWidth, font.TextureHeight, 1, font.Texture, true)
 		textureCache[font] = texture
 	}
 	return texture
 }
 
-func drawText(pipeline Pipeline, text string, font *font.Font, position mgl32.Vec2, color mgl32.Vec4, origin mgl32.Vec2) {
+func drawText(pipeline graphics.Pipeline, text string, font *font.Font, position mgl32.Vec2, color mgl32.Vec4, origin mgl32.Vec2) {
 	fontTexture := getFontTexture(font)
 	graphics.SetTexture(fontTexture, 0)
 	
 	// Set up starting position for text rendering.
 	width, height := font.GetStringWidth(text), font.RowHeight
 	currentX := math.Floor(float64(position[0]) - float64(width) * float64(origin[0]))
-	currentY := math.Floor(float64(position[1]) + font.TopPad - float64(height) * float64(origin[1]))
+	currentY := math.Floor(float64(position[1]) - float64(height) * float64(origin[1]))
 	
 	// Color is the same for all the letters, so we'll set it before the loop.
 	pipeline.SetUniform("color", color)
@@ -165,7 +164,7 @@ func drawText(pipeline Pipeline, text string, font *font.Font, position mgl32.Ve
 		pipeline.SetUniform("model_matrix", modelMatrix)
 		
 		// Get source rectangle for the font texture.
-		sourceRect := getGlyphSourceRect(glyph, uiFontTextureSize)
+		sourceRect := getGlyphSourceRect(glyph, font.TextureWidth, font.TextureHeight)
 		pipeline.SetUniform("source_rect", sourceRect)
 
 		// Draw a single letter.

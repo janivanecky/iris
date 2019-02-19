@@ -9,29 +9,32 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var responseValue = make(map[string]([5][]int))
-var colors [5]mgl32.Vec4
-var data = []byte (`{"model": "default"}`)
+var requestData = []byte (`{"model": "default"}`)
 
+// GetRandomColorPalette returns a random color palette of 5 colors.
 func GetRandomColorPalette() [] mgl32.Vec4{
-	res, err := http.Post("http://colormind.io/api/", "text/json", bytes.NewBuffer(data))
+	// Send a request to colormind.io.
+	res, err := http.Post("http://colormind.io/api/", "text/json", bytes.NewBuffer(requestData))
 	if err != nil {
 		return nil
 	}
 	defer res.Body.Close()
-
+	
+	// Read the response and get its body as a `map[string]([5][]int)`.
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil
 	}
-
+	var responseValue = make(map[string]([5][]int))
 	err = json.Unmarshal(body, &responseValue)
 	if err != nil {
 		return nil
 	}
-
-	colorInt := responseValue["result"]
-	for i, color := range colorInt {
+	responseColors := responseValue["result"]
+	
+	// Convert colors in response to Vec4s.
+	var colors [5]mgl32.Vec4
+	for i, color := range responseColors {
 		colors[i] = mgl32.Vec4{
 			float32(color[0]) / 255.0,
 			float32(color[1]) / 255.0,

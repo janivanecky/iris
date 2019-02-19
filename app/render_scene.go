@@ -12,16 +12,16 @@ import (
 )
 
 // Pipelines used for 3D scene rendering.
-var pipelinePBR Pipeline
-var pipelinePBRInstanced Pipeline
-var pipelineGeometry Pipeline
-var pipelineGeometryInstanced Pipeline
-var pipelineSSAO Pipeline
-var pipelineBlur Pipeline
-var pipelineBlit Pipeline
-var pipelineShading Pipeline
-var pipelineEffect Pipeline
-var pipelineUI Pipeline
+var pipelinePBR graphics.Pipeline
+var pipelinePBRInstanced graphics.Pipeline
+var pipelineGeometry graphics.Pipeline
+var pipelineGeometryInstanced graphics.Pipeline
+var pipelineSSAO graphics.Pipeline
+var pipelineBlur graphics.Pipeline
+var pipelineBlit graphics.Pipeline
+var pipelineShading graphics.Pipeline
+var pipelineEffect graphics.Pipeline
+var pipelineUI graphics.Pipeline
 
 type SceneBuffers struct {
 	// Framebuffers used for 3D scene rendering.
@@ -48,20 +48,6 @@ var sceneCameraPosition mgl32.Vec3
 
 // Mesh quad spanning the whole screen, used for full-screen blitting.
 var screenQuad graphics.Mesh
-
-type RenderingSettings struct {
-	DirectLight  float64
-	AmbientLight float64
-
-	Roughness    float64
-	Reflectivity float64
-
-	SSAORadius   float64
-	SSAORange    float64
-	SSAOBoundary float64
-
-	MinWhite float64
-}
 
 var rendering *RenderingSettings
 
@@ -108,16 +94,16 @@ var instanceColorBuffer graphics.InstanceBuffer
 
 func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *RenderingSettings) {
 	// Initialize 3D scene rendering pipelines.
-	pipelinePBR = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/pbr_pixel_shader.glsl")
-	pipelinePBRInstanced = GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/pbr_pixel_shader.glsl")
-	pipelineGeometry = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/geometry_pixel_shader.glsl")
-	pipelineGeometryInstanced = GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/geometry_pixel_shader.glsl")
-	pipelineBlur = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blur_pixel_shader.glsl")
-	pipelineBlit = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blit_pixel_shader.glsl")
-	pipelineEffect = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/effect_pixel_shader.glsl")
-	pipelineShading = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/shading_pixel_shader.glsl")
-	pipelineSSAO = GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/ssao_pixel_shader.glsl")
-	pipelineUI = GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
+	pipelinePBR = graphics.GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/pbr_pixel_shader.glsl")
+	pipelinePBRInstanced = graphics.GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/pbr_pixel_shader.glsl")
+	pipelineGeometry = graphics.GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/geometry_pixel_shader.glsl")
+	pipelineGeometryInstanced = graphics.GetPipeline("shaders/geometry_vertex_shader_instanced.glsl", "shaders/geometry_pixel_shader.glsl")
+	pipelineBlur = graphics.GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blur_pixel_shader.glsl")
+	pipelineBlit = graphics.GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/blit_pixel_shader.glsl")
+	pipelineEffect = graphics.GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/effect_pixel_shader.glsl")
+	pipelineShading = graphics.GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/shading_pixel_shader.glsl")
+	pipelineSSAO = graphics.GetPipeline("shaders/blit_vertex_shader.glsl", "shaders/ssao_pixel_shader.glsl")
+	pipelineUI = graphics.GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
 
 	// Set up framebuffers for rendering.
 	backbufferWidth, backbufferHeight := windowWidth, windowHeight
@@ -205,9 +191,6 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	pipelineGeometryInstanced.SetUniform("projection_matrix", sceneProjectionMatrix)
 	pipelineGeometryInstanced.SetUniform("view_matrix", sceneViewMatrix)
 
-	//for _, meshEntity := range meshEntitiesInstanced {
-	//}
-
 	// SSAO computation. 
 	graphics.SetFramebuffer(buffers.bufferSSAO)
 	graphics.SetFramebufferViewport(buffers.bufferSSAO)
@@ -265,13 +248,13 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	return buffers.bufferEffect
 }
 
-func drawMesh(pipeline Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
+func drawMesh(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
 	pipeline.SetUniform("model_matrix", modelMatrix)
 	pipeline.SetUniform("color", color)
 	graphics.DrawMesh(mesh)
 }
 
-func drawMeshInstanced(pipeline Pipeline, mesh graphics.Mesh, modelMatrix []mgl32.Mat4, color []mgl32.Vec4, count int32) {
+func drawMeshInstanced(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix []mgl32.Mat4, color []mgl32.Vec4, count int32) {
 	graphics.UpdateInstanceBuffer(instanceModelBuffer, int(count), modelMatrix)
 	graphics.UpdateInstanceBuffer(instanceColorBuffer, int(count), color)
 	graphics.DrawMeshInstanced(mesh, count, []graphics.InstanceBuffer{instanceModelBuffer, instanceColorBuffer}, []uint32{2, 6})

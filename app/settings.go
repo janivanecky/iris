@@ -32,6 +32,19 @@ type AppSettings struct {
 	id 			  int
 }
 
+type RenderingSettings struct {
+	DirectLight  float64
+	AmbientLight float64
+
+	Roughness    float64
+	Reflectivity float64
+
+	SSAORadius   float64
+	SSAORange    float64
+	SSAOBoundary float64
+
+	MinWhite float64
+}
 
 func copySettings(settings *AppSettings) AppSettings {
 	newSettings := AppSettings{}
@@ -105,7 +118,7 @@ var maxSaveNum int
 
 var settingsList []AppSettings
 func LoadSettings() (AppSettings, int) {
-	os.Mkdir(SAVES_DIR, os.ModeDir)
+	os.Mkdir(SAVES_DIR, 0700)
 	files, err := ioutil.ReadDir(SAVES_DIR)
 	if err != nil {
 		panic(err)

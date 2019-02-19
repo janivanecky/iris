@@ -13,7 +13,7 @@ type InstanceBuffer struct {
 }
 
 // Byte size of a single element in InstanceBuffer.
-var elementByteSize = 4
+const elementByteSize = 4
 
 // GetInstanceBuffer returns an initialized InstanceBuffer.
 // numElements specified number of scalars per-item, not number of items in the buffer.

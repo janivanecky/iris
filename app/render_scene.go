@@ -49,6 +49,25 @@ var sceneCameraPosition mgl32.Vec3
 // Mesh quad spanning the whole screen, used for full-screen blitting.
 var screenQuad graphics.Mesh
 
+var screenQuadVertices = [...]float32{
+	-1.0, -1.0, 0.0, 1.0,
+	0.0, 0.0,
+	-1.0, 1.0, 0.0, 1.0,
+	0.0, 1.0,
+	1.0, 1.0, 0.0, 1.0,
+	1.0, 1.0,
+	1.0, -1.0, 0.0, 1.0,
+	1.0, 0.0,
+}
+
+
+
+var screenQuadIndices = [...]uint32{
+	0, 1, 2,
+	0, 2, 3,
+}
+
+
 var rendering *RenderingSettings
 
 // Projection related info.
@@ -121,7 +140,7 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 	sceneCameraPosition = mgl32.Vec3{0,0,10}
 	
 	// Set up blitting quad mesh.
-	screenQuad = graphics.GetMesh(screenQuadVertices[:], quadIndices[:], []int{4,2})
+	screenQuad = graphics.GetMesh(screenQuadVertices[:], screenQuadIndices[:], []int{4,2})
 
 	// Store window size.
 	screenWidth, screenHeight = windowWidth, windowHeight

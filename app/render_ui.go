@@ -19,6 +19,22 @@ var uiQuad graphics.Mesh
 var uiProjectionMatrix mgl32.Mat4
 var uiScreenHeight float64
 
+var quadVertices = [...]float32{
+	0.0, -1.0, 0.0, 1.0,
+	0.0, 0.0,
+	0.0, 0.0, 0.0, 1.0,
+	0.0, 1.0,
+	1.0, 0.0, 0.0, 1.0,
+	1.0, 1.0,
+	1.0, -1.0, 0.0, 1.0,
+	1.0, 0.0,
+}
+
+var quadIndices = [...]uint32{
+	0, 1, 2,
+	0, 2, 3,
+}
+
 var textureCache map[*font.Font] graphics.Texture
 
 func initUIRendering(uiFont font.Font, windowWidth, windowHeight float64) {

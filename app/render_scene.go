@@ -23,18 +23,14 @@ var pipelineShading graphics.Pipeline
 var pipelineEffect graphics.Pipeline
 var pipelineUI graphics.Pipeline
 
-type SceneBuffers struct {
-	// Framebuffers used for 3D scene rendering.
-	bufferGeometry graphics.Framebuffer
-	bufferScene graphics.Framebuffer
-	bufferSceneMS graphics.Framebuffer
-	bufferSSAO graphics.Framebuffer
-	bufferBlur graphics.Framebuffer
-	bufferShading graphics.Framebuffer
-	bufferEffect graphics.Framebuffer
-}
-
-var fullBuffers SceneBuffers
+// Framebuffers used for 3D scene rendering.
+var bufferGeometry graphics.Framebuffer
+var bufferScene graphics.Framebuffer
+var bufferSceneMS graphics.Framebuffer
+var bufferSSAO graphics.Framebuffer
+var bufferBlur graphics.Framebuffer
+var bufferShading graphics.Framebuffer
+var bufferEffect graphics.Framebuffer
 
 // SSAO related data.
 var ssaoNoiseTexture graphics.Texture
@@ -74,40 +70,6 @@ var rendering *RenderingSettings
 var screenWidth, screenHeight float64
 var near, far float32 = 0.01, 500.0
 
-func setUpBuffers(buffers *SceneBuffers, width, height int32) {
-	buffers.bufferScene = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {
-			"direct": gl.RGBA32F,
-			"ambient": gl.RGBA32F,
-		}, true)
-	buffers.bufferSceneMS = graphics.GetFramebuffer(
-		width, height, 4,
-		map[string]int32 {
-			"direct": gl.RGBA32F,
-			"ambient": gl.RGBA32F,
-		}, true)
-	buffers.bufferGeometry = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {
-			"position": gl.RGBA32F,
-			"normal": gl.RGBA32F,
-		}, true)
-	buffers.bufferSSAO = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {"occlusion": gl.R32F}, false)
-	buffers.bufferBlur = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {"occlusion": gl.R32F}, false)
-	buffers.bufferShading = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {"color": gl.RGBA8}, false)
-	buffers.bufferEffect = graphics.GetFramebuffer(
-		width, height, 1,
-		map[string]int32 {"color": gl.RGBA8}, false)
-	
-}
-
 var instanceModelBuffer graphics.InstanceBuffer
 var instanceColorBuffer graphics.InstanceBuffer
 
@@ -125,8 +87,37 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 	pipelineUI = graphics.GetPipeline("shaders/geometry_vertex_shader.glsl", "shaders/flat_pixel_shader.glsl")
 
 	// Set up framebuffers for rendering.
-	backbufferWidth, backbufferHeight := windowWidth, windowHeight
-	setUpBuffers(&fullBuffers, int32(backbufferWidth), int32(backbufferHeight))
+	backbufferWidth, backbufferHeight := int32(windowWidth), int32(windowHeight)
+	bufferScene = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {
+			"direct": gl.RGBA32F,
+			"ambient": gl.RGBA32F,
+		}, true)
+	bufferSceneMS = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 4,
+		map[string]int32 {
+			"direct": gl.RGBA32F,
+			"ambient": gl.RGBA32F,
+		}, true)
+	bufferGeometry = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {
+			"position": gl.RGBA32F,
+			"normal": gl.RGBA32F,
+		}, true)
+	bufferSSAO = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {"occlusion": gl.R32F}, false)
+	bufferBlur = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {"occlusion": gl.R32F}, false)
+	bufferShading = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {"color": gl.RGBA8}, false)
+	bufferEffect = graphics.GetFramebuffer(
+		backbufferWidth, backbufferHeight, 1,
+		map[string]int32 {"color": gl.RGBA8}, false)
 	
 	// Set up SSAO-related data.
 	ssaoKernels = getSSAOKernels()
@@ -152,7 +143,6 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 }
 
 func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstanced) graphics.Framebuffer {
-	buffers := &fullBuffers
 	bgColor := float32(0.9)
 
 	// Set up 3D rendering settings - no blending and depth test.
@@ -160,8 +150,8 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	graphics.EnableDepthTest()
 	
 	// First we render the direct and indirect lighting multi-sampled.
-	graphics.SetFramebuffer(buffers.bufferSceneMS)
-	graphics.SetFramebufferViewport(buffers.bufferSceneMS)
+	graphics.SetFramebuffer(bufferSceneMS)
+	graphics.SetFramebufferViewport(bufferSceneMS)
 	graphics.ClearScreen(bgColor, bgColor, bgColor, 1.0)
 
 	pipelinePBR.Start()
@@ -190,12 +180,12 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 
 	// Since color rendering was multisampled, we need to resolve into non-MS framebuffer for it to be used
 	// later as a texture.
-	graphics.BlitFramebufferAttachment(buffers.bufferSceneMS, buffers.bufferScene, "direct", "direct")
-	graphics.BlitFramebufferAttachment(buffers.bufferSceneMS, buffers.bufferScene, "ambient", "ambient")
+	graphics.BlitFramebufferAttachment(bufferSceneMS, bufferScene, "direct", "direct")
+	graphics.BlitFramebufferAttachment(bufferSceneMS, bufferScene, "ambient", "ambient")
 
 	// Next we render into geometry buffer (position + normal)
-	graphics.SetFramebuffer(buffers.bufferGeometry)
-	graphics.SetFramebufferViewport(buffers.bufferGeometry)
+	graphics.SetFramebuffer(bufferGeometry)
+	graphics.SetFramebufferViewport(bufferGeometry)
 	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
 
 	pipelineGeometry.Start()
@@ -211,14 +201,14 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	pipelineGeometryInstanced.SetUniform("view_matrix", sceneViewMatrix)
 
 	// SSAO computation. 
-	graphics.SetFramebuffer(buffers.bufferSSAO)
-	graphics.SetFramebufferViewport(buffers.bufferSSAO)
+	graphics.SetFramebuffer(bufferSSAO)
+	graphics.SetFramebufferViewport(bufferSSAO)
 	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
-	graphics.SetFramebufferTexture(buffers.bufferGeometry, "position", 0)
-	graphics.SetFramebufferTexture(buffers.bufferGeometry, "normal", 1)
+	graphics.SetFramebufferTexture(bufferGeometry, "position", 0)
+	graphics.SetFramebufferTexture(bufferGeometry, "normal", 1)
 	graphics.SetTexture(ssaoNoiseTexture, 2)
 
-	width, height := graphics.GetFramebufferSize(buffers.bufferSSAO)
+	width, height := graphics.GetFramebufferSize(bufferSSAO)
 	pipelineSSAO.Start()
 	pipelineSSAO.SetUniform("screen_size", mgl32.Vec2{float32(width), float32(height)})
 	pipelineSSAO.SetUniform("projection_matrix", sceneProjectionMatrix)
@@ -230,24 +220,24 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	graphics.DrawMesh(screenQuad)
 
 	// Blur SSAO computed occlusion.
-	graphics.SetFramebuffer(buffers.bufferBlur)
-	graphics.SetFramebufferViewport(buffers.bufferBlur)
+	graphics.SetFramebuffer(bufferBlur)
+	graphics.SetFramebufferViewport(bufferBlur)
 	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
-	graphics.SetFramebufferTexture(buffers.bufferSSAO, "occlusion", 0)
+	graphics.SetFramebufferTexture(bufferSSAO, "occlusion", 0)
 	
-	width, height = graphics.GetFramebufferSize(buffers.bufferBlur)
+	width, height = graphics.GetFramebufferSize(bufferBlur)
 	pipelineBlur.Start()
 	pipelineBlur.SetUniform("screen_size", mgl32.Vec2{float32(width), float32(height)})
 
 	graphics.DrawMesh(screenQuad)
 
 	// Deffered shading pass.
-	graphics.SetFramebuffer(buffers.bufferShading)
-	graphics.SetFramebufferViewport(buffers.bufferShading)
+	graphics.SetFramebuffer(bufferShading)
+	graphics.SetFramebufferViewport(bufferShading)
 	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
-	graphics.SetFramebufferTexture(buffers.bufferScene, "direct", 0)
-	graphics.SetFramebufferTexture(buffers.bufferScene, "ambient", 1)
-	graphics.SetFramebufferTexture(buffers.bufferBlur, "occlusion", 2)
+	graphics.SetFramebufferTexture(bufferScene, "direct", 0)
+	graphics.SetFramebufferTexture(bufferScene, "ambient", 1)
+	graphics.SetFramebufferTexture(bufferBlur, "occlusion", 2)
 	
 	pipelineShading.Start()
 	pipelineShading.SetUniform("minWhite", float32(rendering.MinWhite))
@@ -255,16 +245,16 @@ func renderScene(meshEntities []meshData, meshEntitiesInstanced []meshDataInstan
 	graphics.DrawMesh(screenQuad)
 	
 	// Post processing effect pass.
-	graphics.SetFramebuffer(buffers.bufferEffect)
-	graphics.SetFramebufferViewport(buffers.bufferEffect)
+	graphics.SetFramebuffer(bufferEffect)
+	graphics.SetFramebufferViewport(bufferEffect)
 	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
-	graphics.SetFramebufferTexture(buffers.bufferShading, "color", 0)
+	graphics.SetFramebufferTexture(bufferShading, "color", 0)
 	
 	pipelineEffect.Start()
 	
 	graphics.DrawMesh(screenQuad)
 
-	return buffers.bufferEffect
+	return bufferEffect
 }
 
 func drawMesh(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
@@ -309,13 +299,13 @@ func getSSAONoiseTex() [ssaoNoiseTextureSize * ssaoNoiseTextureSize]mgl32.Vec3 {
 }
 
 func GetSceneBuffer() ([]byte, int32, int32) {
-	buffer := graphics.GetFramebufferPixels(fullBuffers.bufferEffect, "color")
-	width, height :=  graphics.GetFramebufferSize(fullBuffers.bufferEffect)
+	buffer := graphics.GetFramebufferPixels(bufferEffect, "color")
+	width, height :=  graphics.GetFramebufferSize(bufferEffect)
 	return buffer, width, height
 }
 
 func GetSceneBufferTexture() graphics.Texture {
-	return graphics.GetFramebufferTexture(fullBuffers.bufferEffect, "color")
+	return graphics.GetFramebufferTexture(bufferEffect, "color")
 }
 
 func GetWorldRay(screenX, screenY float64) (mgl32.Vec4, mgl32.Vec4) {

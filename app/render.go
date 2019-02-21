@@ -76,29 +76,16 @@ func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, 
 	screenBuffer = graphics.GetFramebufferDefault()
 }
 
-func Render() {
-	targetBuffer := renderScene(meshEntities, meshEntitiesInstanced)
+func Render(viewMatrix, projectionMatrix mgl32.Mat4) {
+	targetBuffer := renderScene(meshEntities, meshEntitiesInstanced, meshEntitiesUI, viewMatrix, projectionMatrix)
 
-	// Blit to screen
+	// Blit scene buffer to backbuffer.
+	graphics.BlitFramebufferToScreen(targetBuffer, "color")
+
+	// The UI will be rendered directly into backbuffer.
 	graphics.SetFramebuffer(screenBuffer)
 	graphics.SetFramebufferViewport(screenBuffer)
-	graphics.ClearScreen(0.0, 0.0, 0.0, 0.0)
-	graphics.SetFramebufferTexture(targetBuffer, "color", 0)
-	
-	pipelineBlit.Start()
-	
-	graphics.DrawMesh(screenQuad)
 
-	// Draw in-scene UI on top
-	graphics.EnableBlending()
-	graphics.DisableDepthTest()
-	pipelineUI.Start()
-	pipelineUI.SetUniform("projection_matrix", sceneProjectionMatrix)
-	pipelineUI.SetUniform("view_matrix", sceneViewMatrix)
-	for _, meshEntity := range meshEntitiesUI {
-		drawMesh(pipelineUI, meshEntity.mesh, meshEntity.modelMatrix, meshEntity.color)
-	}
-	
 	// Get UI rendering buffers
 	rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
 	for _, rect := range rectRenderingBuffer {
@@ -126,14 +113,6 @@ func Render() {
 	rectTextureEntities[1] = rectTextureEntities[1][:0]
 	
 	ui.Clear()
-}
-
-func SetCamera(camera Camera) {
-	position := camera.GetPosition()
-	target := camera.GetTarget()
-	up := camera.GetUp()
-	sceneCameraPosition = position.Add(target)
-	sceneViewMatrix = mgl32.LookAtV(sceneCameraPosition, target, up)
 }
 
 func DrawMesh(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {

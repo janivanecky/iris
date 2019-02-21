@@ -1,8 +1,17 @@
 =========================
 DOING
 =========================
-- cleanup libs
-    - font.go
+- wonky:
+    - camera.go
+    - cells.go
+    - circle.go
+    - main.go
+    - render.go(?)
+    - settings.go
+
+- just clean:
+    - render_scene.go
+    - render_ui.go
 
 =========================
 TODO
@@ -22,8 +31,10 @@ MAINTENANCE
 - input.go can be potentially significantly reduced
 - DPI scaling cleanup
 - need to use DelTexture
+- remove panic from lib(?) + fmt.Println
 
 FEATURES
+- z-fighting
 - better slider (needs a replacement)
 - make window movable and exitable by click
 - add key shortcuts help
@@ -48,6 +59,24 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+20/02/19
+- scene UI move to render_scene.go
+- cleanup render_scene.go
+- remove matrices from render_scene.go
+- remove SetCamera()
+
+18/02/19
+- remove mesh.go
+- cleanup screenshots.go
+- cleanup pipeline.go
+- cleanup color_generator.go
+
+17/02/19
+- move RenderingSettings to settings
+
+16/02/19
+- clean font.go
+
 15/02/19
 - clean graphics.go
 - clean framebuffer.go

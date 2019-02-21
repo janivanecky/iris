@@ -206,8 +206,8 @@ func main() {
 	screenshotTextFadeDuration := 1.0
 
 	// COUNTS
-	countSliderBgSize := mgl32.Vec2{100.0, float32(windowHeight) * 0.7}
-	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 100, float32(windowHeight) * 0.15}
+	countSliderBgSize := mgl32.Vec2{50.0, float32(windowHeight) * 0.7}
+	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 50, float32(windowHeight) * 0.15}
 	
 	// Count controller parameters
 	countSliderColor := ColorParameter{uiColor, uiColor}
@@ -242,14 +242,21 @@ func main() {
 	start := time.Now()
 	timeSinceMouseMovement := 0.0
 	screenshotTextTimer := 0.0
+
+	const near, far float32 = 0.01, 500.0
+	projectionMatrix := mgl32.Perspective(mgl32.DegToRad(60.0), float32(float64(windowWidth) / float64(windowHeight)), near, far)
 	
 		// UI - depends on RENDERING
 	for i := 0; i < settingsCount; i++ {
 		settings := app.GetSettings(i)
 		drawCells(cells, settings.Cells, cube)
 		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
-		app.SetCamera(camera)
-		app.Render()
+		position := camera.GetPosition()
+		target := camera.GetTarget()
+		up := camera.GetUp()
+		cameraPosition := position.Add(target)
+		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
+		app.Render(viewMatrix, projectionMatrix)
 		
 		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 		texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
@@ -258,7 +265,6 @@ func main() {
 
 	// RENDERING
 	camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
-	app.SetCamera(camera)
 
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
@@ -499,8 +505,13 @@ func main() {
 		}
 		
 		// CIRCLE
+		position := camera.GetPosition()
+		target := camera.GetTarget()
+		up := camera.GetUp()
+		cameraPosition := position.Add(target)
+		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
 		// Calculate mouse position in world space (considering pos 0 on y-axis).
-		rS, rD := app.GetWorldRay(mouseX, mouseY)
+		rS, rD := app.GetWorldRay(mouseX, mouseY, viewMatrix, projectionMatrix)
 		posY := float32(0.0)
 		s := posY - rS.Y() / rD.Y()
 		pos := rS.Add(rD.Mul(s))
@@ -589,15 +600,18 @@ func main() {
 		}
 
 		drawCells(cells, settings.Cells, cube)
-
-		app.SetCamera(camera)
+		position = camera.GetPosition()
+		target = camera.GetTarget()
+		up = camera.GetUp()
+		cameraPosition = position.Add(target)
+		viewMatrix = mgl32.LookAtV(cameraPosition, target, up)
 		camera.Update(dt)
 		settings.Camera.Radius = camera.TargetRadius
 		settings.Camera.Azimuth = camera.TargetAzimuth
 		settings.Camera.Polar = camera.TargetPolar
 		settings.Camera.Height = camera.TargetHeight
-		app.Render()
-
+		app.Render(viewMatrix, projectionMatrix)
+		
 		// Swappity-swap.
 		window.SwapBuffers()
 	}

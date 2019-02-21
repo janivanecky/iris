@@ -243,7 +243,7 @@ func BlitFramebufferToScreen(from Framebuffer, attachment string) {
 
 	// Bind backbuffer.
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-	gl.DrawBuffer(gl.FRONT)
+	gl.DrawBuffer(gl.BACK)
 
 	gl.BlitFramebuffer(0, 0, from.width, from.height, 0, 0, backbufferWidth, backbufferHeight, gl.COLOR_BUFFER_BIT, gl.LINEAR); 
 }

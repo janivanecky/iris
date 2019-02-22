@@ -41,9 +41,6 @@ var bufferSceneUI graphics.Framebuffer
 var ssaoNoiseTexture graphics.Texture
 var ssaoKernels [16]mgl32.Vec3
 
-// Projection related info.
-var screenWidth, screenHeight float64
-
 // Mesh quad spanning the whole screen, used for full-screen blitting.
 var screenQuad graphics.Mesh
 
@@ -63,13 +60,10 @@ var screenQuadIndices = [...]uint32{
 	0, 2, 3,
 }
 
-// TODO: this should go away
-var rendering *RenderingSettings
-
 var instanceModelBuffer graphics.InstanceBuffer
 var instanceColorBuffer graphics.InstanceBuffer
 
-func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *RenderingSettings) {
+func initSceneRendering(windowWidth, windowHeight float64) {
 	// Initialize 3D scene rendering pipelines.
 	pipelinePBR = graphics.GetPipeline(
 		"shaders/geometry_vertex_shader.glsl",
@@ -146,11 +140,6 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 	// Set up blitting quad mesh.
 	screenQuad = graphics.GetMesh(screenQuadVertices[:], screenQuadIndices[:], []int{4,2})
 
-	// Store window size.
-	screenWidth, screenHeight = windowWidth, windowHeight
-
-	rendering = renderingSettings
-
 	// Set up buffers for instanced rendering.
 	instanceColorBuffer = graphics.GetInstanceBuffer(4)
 	instanceModelBuffer = graphics.GetInstanceBuffer(16)
@@ -159,7 +148,8 @@ func initSceneRendering(windowWidth, windowHeight float64, renderingSettings *Re
 func renderScene(meshEntities []meshData,
 				 meshEntitiesInstanced []meshDataInstanced,
 				 meshEntitiesSceneUI []meshData,
-				 viewMatrix, projectionMatrix mgl32.Mat4) graphics.Framebuffer {
+				 viewMatrix, projectionMatrix mgl32.Mat4,
+				 settings *RenderingSettings) graphics.Framebuffer {
 	// Set up 3D rendering settings - no blending and depth test.
 	graphics.DisableBlending()
 	graphics.EnableDepthTest()
@@ -173,10 +163,10 @@ func renderScene(meshEntities []meshData,
 	pipelinePBR.Start()
 	pipelinePBR.SetUniform("projection_matrix", projectionMatrix)
 	pipelinePBR.SetUniform("view_matrix", viewMatrix)
-	pipelinePBR.SetUniform("roughness", float32(rendering.Roughness))
-	pipelinePBR.SetUniform("reflectivity", float32(rendering.Reflectivity))
-	pipelinePBR.SetUniform("direct_light_power", float32(rendering.DirectLight))
-	pipelinePBR.SetUniform("ambient_light_power", float32(rendering.AmbientLight))
+	pipelinePBR.SetUniform("roughness", float32(settings.Roughness))
+	pipelinePBR.SetUniform("reflectivity", float32(settings.Reflectivity))
+	pipelinePBR.SetUniform("direct_light_power", float32(settings.DirectLight))
+	pipelinePBR.SetUniform("ambient_light_power", float32(settings.AmbientLight))
 	
 	for _, meshEntity := range meshEntities {
 		drawMesh(pipelinePBR, meshEntity.mesh, meshEntity.modelMatrix, meshEntity.color)
@@ -186,10 +176,10 @@ func renderScene(meshEntities []meshData,
 	pipelinePBRInstanced.Start()
 	pipelinePBRInstanced.SetUniform("projection_matrix", projectionMatrix)
 	pipelinePBRInstanced.SetUniform("view_matrix", viewMatrix)
-	pipelinePBRInstanced.SetUniform("roughness", float32(rendering.Roughness))
-	pipelinePBRInstanced.SetUniform("reflectivity", float32(rendering.Reflectivity))
-	pipelinePBRInstanced.SetUniform("direct_light_power", float32(rendering.DirectLight))
-	pipelinePBRInstanced.SetUniform("ambient_light_power", float32(rendering.AmbientLight))
+	pipelinePBRInstanced.SetUniform("roughness", float32(settings.Roughness))
+	pipelinePBRInstanced.SetUniform("reflectivity", float32(settings.Reflectivity))
+	pipelinePBRInstanced.SetUniform("direct_light_power", float32(settings.DirectLight))
+	pipelinePBRInstanced.SetUniform("ambient_light_power", float32(settings.AmbientLight))
 
 	for _, meshEntity := range meshEntitiesInstanced {
 		drawMeshInstanced(pipelinePBRInstanced, meshEntity.mesh, meshEntity.modelMatrix,
@@ -238,9 +228,9 @@ func renderScene(meshEntities []meshData,
 	pipelineSSAO.SetUniform("screen_size", mgl32.Vec2{float32(width), float32(height)})
 	pipelineSSAO.SetUniform("projection_matrix", projectionMatrix)
 	pipelineSSAO.SetUniform("kernels", ssaoKernels[:])
-	pipelineSSAO.SetUniform("ssao_radius", float32(rendering.SSAORadius))
-	pipelineSSAO.SetUniform("ssao_range", float32(rendering.SSAORange))
-	pipelineSSAO.SetUniform("ssao_range_boundary", float32(rendering.SSAOBoundary))
+	pipelineSSAO.SetUniform("ssao_radius", float32(settings.SSAORadius))
+	pipelineSSAO.SetUniform("ssao_range", float32(settings.SSAORange))
+	pipelineSSAO.SetUniform("ssao_range_boundary", float32(settings.SSAOBoundary))
 	
 	graphics.DrawMesh(screenQuad)
 
@@ -265,7 +255,7 @@ func renderScene(meshEntities []meshData,
 	graphics.SetFramebufferTexture(bufferBlur, "occlusion", 2)
 	
 	pipelineShading.Start()
-	pipelineShading.SetUniform("minWhite", float32(rendering.MinWhite))
+	pipelineShading.SetUniform("minWhite", float32(settings.MinWhite))
 	
 	graphics.DrawMesh(screenQuad)
 	
@@ -351,26 +341,4 @@ func GetSceneBuffer() ([]byte, int32, int32) {
 	buffer := graphics.GetFramebufferPixels(bufferEffect, "color")
 	width, height :=  graphics.GetFramebufferSize(bufferEffect)
 	return buffer, width, height
-}
-
-// TODO: move, refactor
-const far, near = 500.0, 0.01
-func GetWorldRay(screenX, screenY float64, viewMatrix, projectionMatrix mgl32.Mat4) (mgl32.Vec4, mgl32.Vec4) {
-	projViewMatrix := projectionMatrix.Mul4(viewMatrix)
-	invProjViewMatrix := projViewMatrix.Inv()
-
-	relX := float32(screenX / screenWidth * 2.0 - 1.0)
-	relY := -float32(screenY / screenHeight * 2.0 - 1.0)
-
-	vFar := mgl32.Vec4{relX, relY, 1.0, 1.0}
-	vFar = vFar.Mul(far)
-    vFar = invProjViewMatrix.Mul4x1(vFar)
-
-	vNear := mgl32.Vec4{relX, relY, -1.0, 1.0}
-	vNear = vNear.Mul(near)
-	vNear = invProjViewMatrix.Mul4x1(vNear)
-	
-	vDiff := vFar.Sub(vNear)
-	vDiff = vDiff.Normalize()
-	return vNear, vDiff
 }

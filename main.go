@@ -104,6 +104,30 @@ func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2)
     return false
 }
 
+// TODO: move, refactor
+const far, near = 500.0, 0.01
+func GetWorldRay(screenX, screenY float64,
+				 				 screenWidth, screenHeight float64,
+				 				 viewMatrix, projectionMatrix mgl32.Mat4) (mgl32.Vec4, mgl32.Vec4) {
+	projViewMatrix := projectionMatrix.Mul4(viewMatrix)
+	invProjViewMatrix := projViewMatrix.Inv()
+
+	relX := float32(screenX / screenWidth * 2.0 - 1.0)
+	relY := -float32(screenY / screenHeight * 2.0 - 1.0)
+
+	vFar := mgl32.Vec4{relX, relY, 1.0, 1.0}
+	vFar = vFar.Mul(far)
+    vFar = invProjViewMatrix.Mul4x1(vFar)
+
+	vNear := mgl32.Vec4{relX, relY, -1.0, 1.0}
+	vNear = vNear.Mul(near)
+	vNear = invProjViewMatrix.Mul4x1(vNear)
+	
+	vDiff := vFar.Sub(vNear)
+	vDiff = vDiff.Normalize()
+	return vNear, vDiff
+}
+
 // UTILS
 func InvertBytes (bytes []byte, rowLength, rowCount int) []byte{
 	invertedBytes := make([]byte, len(bytes))
@@ -151,7 +175,7 @@ func main() {
 	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
 	
 	// RENDERING (tied to UI)
-	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle, &settings.Rendering)
+	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle)
 
 	// UI
 	trashIconFile, err := os.Open("trash.png")
@@ -256,7 +280,7 @@ func main() {
 		up := camera.GetUp()
 		cameraPosition := position.Add(target)
 		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
-		app.Render(viewMatrix, projectionMatrix)
+		app.Render(viewMatrix, projectionMatrix, &settings.Rendering)
 		
 		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 		texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
@@ -511,7 +535,7 @@ func main() {
 		cameraPosition := position.Add(target)
 		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
 		// Calculate mouse position in world space (considering pos 0 on y-axis).
-		rS, rD := app.GetWorldRay(mouseX, mouseY, viewMatrix, projectionMatrix)
+		rS, rD := GetWorldRay(mouseX, mouseY, float64(windowWidth), float64(windowHeight), viewMatrix, projectionMatrix)
 		posY := float32(0.0)
 		s := posY - rS.Y() / rD.Y()
 		pos := rS.Add(rD.Mul(s))
@@ -610,7 +634,7 @@ func main() {
 		settings.Camera.Azimuth = camera.TargetAzimuth
 		settings.Camera.Polar = camera.TargetPolar
 		settings.Camera.Height = camera.TargetHeight
-		app.Render(viewMatrix, projectionMatrix)
+		app.Render(viewMatrix, projectionMatrix, &settings.Rendering)
 		
 		// Swappity-swap.
 		window.SwapBuffers()

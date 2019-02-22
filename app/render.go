@@ -51,7 +51,7 @@ var textEntities [][]textData
 
 var screenBuffer graphics.Framebuffer
 
-func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, uiFontTitle font.Font, renderingSettings *RenderingSettings) {
+func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, uiFontTitle font.Font) {
 	// Set up libraries
 	graphics.Init()
 	ui.Init(windowWidth, windowHeight, &uiFont, &uiFontTitle)
@@ -69,15 +69,15 @@ func InitRendering(windowWidth float64, windowHeight float64, uiFont font.Font, 
 	meshEntitiesInstanced = make([]meshDataInstanced, 0, 10)
 	meshEntitiesUI = make([]meshData, 0, 100)
 
-	initSceneRendering(windowWidth, windowHeight, renderingSettings	)
+	initSceneRendering(windowWidth, windowHeight)
 	initUIRendering(uiFont, windowWidth, windowHeight)
 	
 	// Framebuffer setup
 	screenBuffer = graphics.GetFramebufferDefault()
 }
 
-func Render(viewMatrix, projectionMatrix mgl32.Mat4) {
-	targetBuffer := renderScene(meshEntities, meshEntitiesInstanced, meshEntitiesUI, viewMatrix, projectionMatrix)
+func Render(viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSettings) {
+	targetBuffer := renderScene(meshEntities, meshEntitiesInstanced, meshEntitiesUI, viewMatrix, projectionMatrix, settings)
 
 	// Blit scene buffer to backbuffer.
 	graphics.BlitFramebufferToScreen(targetBuffer, "color")

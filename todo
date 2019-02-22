@@ -10,13 +10,14 @@ DOING
     - settings.go
 
 - just clean:
-    - render_scene.go
     - render_ui.go
+
 
 =========================
 TODO
 =========================
 MAINTENANCE
+- main.go is two spaces instead of four?
 - remove global states?
 - circle UI function
 - load bar functions
@@ -49,6 +50,8 @@ FEATURES
 - optimize circle generation, so we don't have to re-generate/re-allocate that often
 
 NEEDS FIX
+- Why is rendering settings random at start?
+- Is it low-res by accident? (Or is it due to DPI)
 - Banding SSAO?
 - If save bar extended and mouse goes outside, flickering
 
@@ -59,6 +62,11 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+21/02/19
+- remove screenWidth/Height vars
+- remove GetWorldRay
+- don't keep RenderingSettings in render_scene.go
+
 20/02/19
 - scene UI move to render_scene.go
 - cleanup render_scene.go

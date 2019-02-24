@@ -6,17 +6,16 @@ DOING
     - cells.go
     - circle.go
     - main.go
-    - render.go(?)
     - settings.go
-
-- just clean:
-    - render_ui.go
-
 
 =========================
 TODO
 =========================
 MAINTENANCE
+- is render_scene.go:GetSceneBuffer needed?
+- renderUI uses UI lib directly, maybe shouldn't?
+- renderScene, renderUI should accept target buffer as parameter
+- Pipelines as parameters to drawXXXX (?)
 - main.go is two spaces instead of four?
 - remove global states?
 - circle UI function
@@ -24,7 +23,6 @@ MAINTENANCE
 - do app specific UI properly
 - cleanup shaders
 - cleanup UI.go
-- cleanup render_xxx.go
 - cleanup main.go
 - optimize so running 60fps on integrated card
 - redo as async systems?
@@ -33,6 +31,7 @@ MAINTENANCE
 - DPI scaling cleanup
 - need to use DelTexture
 - remove panic from lib(?) + fmt.Println
+- cleanup shaders
 
 FEATURES
 - z-fighting
@@ -62,6 +61,10 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+23/02/19
+- cleanup render_ui.go
+- remove render.go
+
 21/02/19
 - remove screenWidth/Height vars
 - remove GetWorldRay

@@ -174,9 +174,15 @@ func main() {
 	uiFontTitle := font.GetFont(truetypeTitleBytes, 34.0, scale)
 	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
 	
-	// RENDERING (tied to UI)
-	app.InitRendering(float64(windowWidth), float64(windowHeight), uiFont, uiFontTitle)
+	// Set up libraries
+	graphics.Init()
+	ui.Init(float64(windowWidth), float64(windowHeight), &uiFont, &uiFontTitle)
 
+	// Init renderers.
+	app.InitUIRendering(uiFont, float64(windowWidth), float64(windowHeight))
+	app.InitSceneRendering(float64(windowWidth), float64(windowHeight))
+	screenBuffer := graphics.GetFramebufferDefault()
+		
 	// UI
 	trashIconFile, err := os.Open("trash.png")
     if err != nil {
@@ -280,7 +286,11 @@ func main() {
 		up := camera.GetUp()
 		cameraPosition := position.Add(target)
 		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
-		app.Render(viewMatrix, projectionMatrix, &settings.Rendering)
+		
+		targetBuffer := app.RenderScene(viewMatrix, projectionMatrix, &settings.Rendering)
+		app.ResetScene()
+		// Blit scene buffer to backbuffer.
+		graphics.BlitFramebufferToScreen(targetBuffer, "color")
 		
 		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 		texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
@@ -377,13 +387,13 @@ func main() {
 
 		}
 		fpsString := fmt.Sprintf("%d", fps)
-		app.DrawText(fpsString, &infoFont, mgl32.Vec2{float32(windowWidth) - 10, float32(windowHeight) - 10}, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{1, 1}, 0)
+		app.DrawUIText(fpsString, &infoFont, mgl32.Vec2{float32(windowWidth) - 10, float32(windowHeight) - 10}, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{1, 1}, 0)
 		
 		// Show screenshot text.
 		screenshotTextPart := math.Min(screenshotTextTimer / screenshotTextFadeDuration, 1.0)
 		alpha := math.Sqrt(screenshotTextPart)
 		if alpha > 0.0 {
-			app.DrawText("IMAGE SAVED", &infoFont, mgl32.Vec2{float32(windowWidth) / 2.0, float32(windowHeight) - 10}, mgl32.Vec4{0.0, 0.0, 0.0, float32(alpha) * 0.8}, mgl32.Vec2{0.5, 1.0}, 0)
+			app.DrawUIText("IMAGE SAVED", &infoFont, mgl32.Vec2{float32(windowWidth) / 2.0, float32(windowHeight) - 10}, mgl32.Vec4{0.0, 0.0, 0.0, float32(alpha) * 0.8}, mgl32.Vec2{0.5, 1.0}, 0)
 		}
 		if screenshotTextTimer > 0.0 {
 			screenshotTextTimer -= dt
@@ -430,7 +440,7 @@ func main() {
 			loadBarColor.target = inactiveUIColor
 		}
 
-		app.DrawRect(loadBarPos, loadBarSize, loadBarColor.val, 0)
+		app.DrawUIRect(loadBarPos, loadBarSize, loadBarColor.val, 0)
 
 		for i := range loadBarDeleteButtonColors {
 			loadBarDeleteButtonColors[i].Update(dt, 8.0)
@@ -458,10 +468,10 @@ func main() {
 					settingsCount = app.SaveSettings(settings)
 				}
 			} 
-			app.DrawRect(savePos, saveSize, saveColor, 0)
+			app.DrawUIRect(savePos, saveSize, saveColor, 0)
 
 			textPos := mgl32.Vec2{savePos[0] + saveSize[0] * 0.5, savePos[1] + saveSize[1] * 0.5}
-			app.DrawText("SAVE", &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.6}, mgl32.Vec2{0.5,0.5}, 1)
+			app.DrawUIText("SAVE", &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.6}, mgl32.Vec2{0.5,0.5}, 1)
 		}
 
 		toRemove := -1
@@ -508,17 +518,17 @@ func main() {
 				loadBarDeleteButtonColors[i].target = deleteBarColorHidden
 				loadBarSettingsColors[i].target = settingsColor
 			}
-			app.DrawRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
+			app.DrawUIRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
 
 			trashCanSize := mgl32.Vec2{50, 50}
 			trashCanPos := mgl32.Vec2{deleteButtonPos[0] + deleteButtonSize[0] * 0.5 - trashCanSize[0] * 0.5, deleteButtonPos[1] + deleteButtonSize[1] * 0.5 - trashCanSize[1] * 0.5}
-			app.DrawRectTextured(trashCanPos, trashCanSize, trashIconTexture, mgl32.Vec4{1,1,1,deleteButtonColor[3]}, 1)
+			app.DrawUIRectTextured(trashCanPos, trashCanSize, trashIconTexture, mgl32.Vec4{1,1,1,deleteButtonColor[3]}, 1)
 
 			texture := settingsTextures[i]
-			app.DrawRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].val, 0)
+			app.DrawUIRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].val, 0)
 
 			textPos := mgl32.Vec2{settingsPos[0] + 10, settingsPos[1] + 5}
-			app.DrawText("#" + strconv.Itoa(i), &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{0,0}, 0)
+			app.DrawUIText("#" + strconv.Itoa(i), &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{0,0}, 0)
 		}
 
 		if toRemove >= 0 {
@@ -562,7 +572,7 @@ func main() {
 			
 			circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
 			circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-			app.DrawMeshUI(circleInner, mgl32.Ident4(), innerCircle.Color.Val)
+			app.DrawMeshSceneUI(circleInner, mgl32.Ident4(), innerCircle.Color.Val)
 		}
 		settings.Cells.RadiusMin = innerCircle.Radius.Val
 
@@ -585,7 +595,7 @@ func main() {
 			
 			circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
 			circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
-			app.DrawMeshUI(circleOuter, mgl32.Ident4(), outerCircle.Color.Val)
+			app.DrawMeshSceneUI(circleOuter, mgl32.Ident4(), outerCircle.Color.Val)
 		}
 		settings.Cells.RadiusMax = outerCircle.Radius.Val
 
@@ -619,8 +629,8 @@ func main() {
 			countSliderSize := mgl32.Vec2{countSliderBgSize[0], countSliderBgSize[1] * portion}
 			countSliderPos := mgl32.Vec2{countSliderBgPos[0], countSliderBgPos[1] + countSliderBgSize[1] - countSliderSize[1]}
 
-			app.DrawRect(countSliderBgPos, countSliderBgSize, countSliderColor.val, 0)
-			app.DrawRect(countSliderPos, countSliderSize, countSliderColor.val, 0)
+			app.DrawUIRect(countSliderBgPos, countSliderBgSize, countSliderColor.val, 0)
+			app.DrawUIRect(countSliderPos, countSliderSize, countSliderColor.val, 0)
 		}
 
 		drawCells(cells, settings.Cells, cube)
@@ -634,7 +644,24 @@ func main() {
 		settings.Camera.Azimuth = camera.TargetAzimuth
 		settings.Camera.Polar = camera.TargetPolar
 		settings.Camera.Height = camera.TargetHeight
-		app.Render(viewMatrix, projectionMatrix, &settings.Rendering)
+
+		targetBuffer := app.RenderScene(viewMatrix, projectionMatrix, &settings.Rendering)
+		app.ResetScene()
+		// Blit scene buffer to backbuffer.
+		graphics.BlitFramebufferToScreen(targetBuffer, "color")
+
+		rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
+		for _, rect := range rectRenderingBuffer {
+			app.DrawUIRect(rect.Position, rect.Size, rect.Color, 0)
+		}
+	
+		for _, text := range textRenderingBuffer {
+			font := (*text.Font).(*font.Font)
+			app.DrawUIText(text.Text, font, text.Position, text.Color, text.Origin, 0)
+		}
+		
+		app.RenderUI(screenBuffer)
+		app.ResetUI()
 		
 		// Swappity-swap.
 		window.SwapBuffers()

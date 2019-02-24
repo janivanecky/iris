@@ -60,10 +60,31 @@ var screenQuadIndices = [...]uint32{
 	0, 2, 3,
 }
 
+// Instance buffers for drawing cells.
 var instanceModelBuffer graphics.InstanceBuffer
 var instanceColorBuffer graphics.InstanceBuffer
 
-func initSceneRendering(windowWidth, windowHeight float64) {
+// Structs for storing draw data.
+type meshData struct {
+	mesh 	    graphics.Mesh
+	modelMatrix mgl32.Mat4
+	color 	    mgl32.Vec4
+}
+
+type meshDataInstanced struct {
+	mesh 	    graphics.Mesh
+	modelMatrix []mgl32.Mat4
+	color 	    []mgl32.Vec4
+	count 		int32
+}
+
+// Slices for storing draw data.
+var meshEntities 		  []meshData
+var meshEntitiesSceneUI   []meshData
+var meshEntitiesInstanced []meshDataInstanced
+
+// InitSceneRendering initializes necessary objects for 3D scene rendering.
+func InitSceneRendering(windowWidth, windowHeight float64) {
 	// Initialize 3D scene rendering pipelines.
 	pipelinePBR = graphics.GetPipeline(
 		"shaders/geometry_vertex_shader.glsl",
@@ -143,13 +164,15 @@ func initSceneRendering(windowWidth, windowHeight float64) {
 	// Set up buffers for instanced rendering.
 	instanceColorBuffer = graphics.GetInstanceBuffer(4)
 	instanceModelBuffer = graphics.GetInstanceBuffer(16)
+
+	// Initialize slices which will store data for draw calls.
+	meshEntities 		  = make([]meshData, 0, 100)
+	meshEntitiesInstanced = make([]meshDataInstanced, 0, 10)
+	meshEntitiesSceneUI   = make([]meshData, 0, 100)
 }
 
-func renderScene(meshEntities []meshData,
-				 meshEntitiesInstanced []meshDataInstanced,
-				 meshEntitiesSceneUI []meshData,
-				 viewMatrix, projectionMatrix mgl32.Mat4,
-				 settings *RenderingSettings) graphics.Framebuffer {
+// RenderScene sends commands to draw meshes gathered from DrawMeshXXX calls.
+func RenderScene(viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSettings) graphics.Framebuffer {
 	// Set up 3D rendering settings - no blending and depth test.
 	graphics.DisableBlending()
 	graphics.EnableDepthTest()
@@ -182,7 +205,7 @@ func renderScene(meshEntities []meshData,
 	pipelinePBRInstanced.SetUniform("ambient_light_power", float32(settings.AmbientLight))
 
 	for _, meshEntity := range meshEntitiesInstanced {
-		drawMeshInstanced(pipelinePBRInstanced, meshEntity.mesh, meshEntity.modelMatrix,
+		drawMeshInstanced(meshEntity.mesh, meshEntity.modelMatrix,
 						  meshEntity.color, meshEntity.count)
 	}
 
@@ -211,7 +234,7 @@ func renderScene(meshEntities []meshData,
 	pipelineGeometryInstanced.SetUniform("view_matrix", viewMatrix)
 
 	for _, meshEntity := range meshEntitiesInstanced {
-		drawMeshInstanced(pipelineGeometryInstanced, meshEntity.mesh, meshEntity.modelMatrix,
+		drawMeshInstanced(meshEntity.mesh, meshEntity.modelMatrix,
 						  meshEntity.color, meshEntity.count)
 	}
 
@@ -291,13 +314,38 @@ func renderScene(meshEntities []meshData,
 	return bufferSceneUI
 }
 
+// ResetScene clears lists of meshes to draw.
+// Should be called right after RenderScene().
+func ResetScene() {
+	meshEntities 		  = meshEntities[:0]
+	meshEntitiesInstanced = meshEntitiesInstanced[:0]
+	meshEntitiesSceneUI   = meshEntitiesSceneUI[:0]
+}
+
+// DrawMesh sets mesh to be drawn in scene next frame.
+func DrawMesh(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
+	meshEntities = append(meshEntities, meshData{mesh, modelMatrix, color})
+}
+
+// DrawMeshInstanced sets mesh to be drawn multiple times in scene next frame.
+func DrawMeshInstanced(mesh graphics.Mesh, modelMatrix []mgl32.Mat4, color []mgl32.Vec4, count int) {
+	meshEntitiesInstanced = append(meshEntitiesInstanced, meshDataInstanced{mesh, modelMatrix, color, int32(count)})
+}
+
+// DrawMeshSceneUI sets mesh to be drawn as in-scene UI next frame.
+func DrawMeshSceneUI(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
+	meshEntitiesSceneUI = append(meshEntitiesSceneUI, meshData{mesh, modelMatrix, color})
+}
+
+// TODO: pipeline - should be passed as param? There's already strong assumption on uniforms it has.
 func drawMesh(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
 	pipeline.SetUniform("model_matrix", modelMatrix)
 	pipeline.SetUniform("color", color)
 	graphics.DrawMesh(mesh)
 }
 
-func drawMeshInstanced(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix []mgl32.Mat4,
+// TODO: instance buffers should be passed as args?
+func drawMeshInstanced(mesh graphics.Mesh, modelMatrix []mgl32.Mat4,
 					   color []mgl32.Vec4, count int32) {
 	graphics.UpdateInstanceBuffer(instanceModelBuffer, int(count), modelMatrix)
 	graphics.UpdateInstanceBuffer(instanceColorBuffer, int(count), color)

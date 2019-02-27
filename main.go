@@ -280,12 +280,8 @@ func main() {
 	for i := 0; i < settingsCount; i++ {
 		settings := app.GetSettings(i)
 		drawCells(cells, settings.Cells, cube)
-		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
-		position := camera.GetPosition()
-		target := camera.GetTarget()
-		up := camera.GetUp()
-		cameraPosition := position.Add(target)
-		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
+		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height)
+		viewMatrix := camera.GetViewMatrix()
 		
 		targetBuffer := app.RenderScene(viewMatrix, projectionMatrix, &settings.Rendering)
 		app.ResetScene()
@@ -298,7 +294,7 @@ func main() {
 	}
 
 	// RENDERING
-	camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height, 5.0)
+	camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height)
 
 	// Start our fancy-shmancy loop
 	for !window.ShouldClose() {
@@ -502,10 +498,8 @@ func main() {
 					loadBarDeleteButtonColors[i].target = deleteBarColor
 					if platform.IsMouseLeftButtonPressed() {
 						settings = app.GetSettings(i)
-						camera.TargetRadius = settings.Camera.Radius
-						camera.TargetPolar = settings.Camera.Polar
-						camera.TargetAzimuth = settings.Camera.Azimuth
-						camera.TargetHeight = settings.Camera.Height
+						camera.SetStateWithTransition(settings.Camera.Radius, settings.Camera.Azimuth,
+													  							settings.Camera.Polar, settings.Camera.Height)
 						countSliderValue.target = float64(settings.Cells.Count)
 						outerCircle.Radius.Target = settings.Cells.RadiusMax
 						innerCircle.Radius.Target = settings.Cells.RadiusMin
@@ -539,11 +533,7 @@ func main() {
 		}
 		
 		// CIRCLE
-		position := camera.GetPosition()
-		target := camera.GetTarget()
-		up := camera.GetUp()
-		cameraPosition := position.Add(target)
-		viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
+		viewMatrix := camera.GetViewMatrix()
 		// Calculate mouse position in world space (considering pos 0 on y-axis).
 		rS, rD := GetWorldRay(mouseX, mouseY, float64(windowWidth), float64(windowHeight), viewMatrix, projectionMatrix)
 		posY := float32(0.0)
@@ -634,16 +624,9 @@ func main() {
 		}
 
 		drawCells(cells, settings.Cells, cube)
-		position = camera.GetPosition()
-		target = camera.GetTarget()
-		up = camera.GetUp()
-		cameraPosition = position.Add(target)
-		viewMatrix = mgl32.LookAtV(cameraPosition, target, up)
+		viewMatrix = camera.GetViewMatrix()
 		camera.Update(dt)
-		settings.Camera.Radius = camera.TargetRadius
-		settings.Camera.Azimuth = camera.TargetAzimuth
-		settings.Camera.Polar = camera.TargetPolar
-		settings.Camera.Height = camera.TargetHeight
+		settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar,settings.Camera.Height = camera.GetState()
 
 		targetBuffer := app.RenderScene(viewMatrix, projectionMatrix, &settings.Rendering)
 		app.ResetScene()

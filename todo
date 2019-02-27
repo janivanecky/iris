@@ -2,7 +2,6 @@
 DOING
 =========================
 - wonky:
-    - camera.go
     - cells.go
     - circle.go
     - main.go
@@ -61,6 +60,13 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+26/02/19
+- cleanup camera.go
+
+25/02/19
+- map camera to view matrix directly
+- clean camera.go interface - mainly setting and getting target state
+
 23/02/19
 - cleanup render_ui.go
 - remove render.go

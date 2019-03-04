@@ -18,33 +18,33 @@ const radiusChangeStep = 10.0
 // Camera represents in-scene camera which smoothly moves
 // around specific point in space, looking at that point.
 type Camera struct {
-	targetRadius, radius float64
-	targetAzimuth, azimuth float64 
-	targetPolar, polar float64
-	targetHeight, height float64
+	radius FloatParameter
+	azimuth RadianParameter
+	polar RadianParameter
+	height FloatParameter
 }
 
 // GetCamera returns initialized Camera.
 func GetCamera(radius, azimuth, polar, height float64) Camera {
 	return Camera {
-		targetRadius: radius, radius: radius,
-		targetAzimuth: azimuth, azimuth: azimuth,
-		targetPolar: polar, polar: polar,
-		targetHeight: height, height: height,
+		radius: FloatParameter{radius, radius},
+		azimuth: RadianParameter{azimuth, azimuth},
+		polar: RadianParameter{polar, polar},
+		height: FloatParameter{height, height},
 	}
 }
 
 // SetStateWithTransition sets camera to smoothly move to other location in space.
 func (cam *Camera) SetStateWithTransition(radius, azimuth, polar, height float64) {
-	cam.targetRadius = radius
-	cam.targetAzimuth = azimuth
-	cam.targetPolar = polar
-	cam.targetHeight = height
+	cam.radius.Target = radius
+	cam.azimuth.Target = azimuth
+	cam.polar.Target = polar
+	cam.height.Target = height
 }
 
 // GetState returns current camera position in space (in polar coordinates).
 func (cam *Camera) GetState() (radius, azimuth, polar, height float64) {
-	return cam.targetRadius, cam.targetAzimuth, cam.targetPolar, cam.targetHeight
+	return cam.radius.Target, cam.azimuth.Target, cam.polar.Target, cam.height.Target
 }
 
 // Update updates camera position in time.
@@ -52,14 +52,14 @@ func (cam *Camera) Update(dt float64) {
 	// Update target height based on input. On the key press height
 	// is adjusted in bigger step than on holding the key.
 	if platform.IsKeyPressed(platform.KeyUp) {
-		cam.targetHeight += keyPressHeightChangeStep
+		cam.height.Target += keyPressHeightChangeStep
 	} else if platform.IsKeyDown(platform.KeyUp) {
-		cam.targetHeight += keyHoldHeightChangeStep
+		cam.height.Target += keyHoldHeightChangeStep
 	}
 	if platform.IsKeyPressed(platform.KeyDown) {
-		cam.targetHeight -= keyPressHeightChangeStep
+		cam.height.Target -= keyPressHeightChangeStep
 	} else if platform.IsKeyDown(platform.KeyDown) {
-		cam.targetHeight -= keyHoldHeightChangeStep
+		cam.height.Target -= keyHoldHeightChangeStep
 	}
 
 	// Update camera angles based on mouse input. Note that left alt key
@@ -68,9 +68,9 @@ func (cam *Camera) Update(dt float64) {
 	// TODO: remove dependencies on ui lib?
 	if !ui.IsRegisteringInput && platform.IsKeyDown(platform.KeyLeftAlt) {
 		if platform.IsMouseLeftButtonDown() {
-			cam.targetAzimuth -= dx * angleChangeStep
-			cam.targetPolar -= dy * angleChangeStep
-			cam.targetPolar = clamp(cam.targetPolar, 0, math.Pi)
+			cam.azimuth.Target -= dx * angleChangeStep
+			cam.polar.Target -= dy * angleChangeStep
+			cam.polar.Target = clamp(cam.polar.Target, 0, math.Pi)
 			// TODO: remove dependencies on ui lib?
 			ui.SetInputResponsive(false)
 		} else {
@@ -80,26 +80,26 @@ func (cam *Camera) Update(dt float64) {
 
 	// Update camera radius.
 	mouseWheelDelta := platform.GetMouseWheelDelta()
-	cam.targetRadius -= mouseWheelDelta * radiusChangeStep
+	cam.radius.Target -= mouseWheelDelta * radiusChangeStep
 
 	// Update camera state so the current state is closer to the target state.
-	cam.azimuth, cam.targetAzimuth = updateAngles(cam.azimuth, cam.targetAzimuth, dt)
-	cam.polar, cam.targetPolar = updateAngles(cam.polar, cam.targetPolar, dt)
-	cam.polar = clamp(cam.polar, 0, math.Pi)
-	cam.radius += (cam.targetRadius - cam.radius) * dt * cameraSpeed
-	cam.height += (cam.targetHeight - cam.height) * dt * cameraSpeed
+	cam.azimuth.Update(dt, cameraSpeed)
+	cam.polar.Update(dt, cameraSpeed)
+	cam.polar.Val = clamp(cam.polar.Val, 0, math.Pi)
+	cam.radius.Update(dt, cameraSpeed)
+	cam.height.Update(dt, cameraSpeed)
 }
 
 // GetViewMatrix returns matrix transforming world space to camera coordinate system.
 func (cam *Camera) GetViewMatrix() mgl32.Mat4 {
 	// position is camera position relative to target.
-	position := vecFromPolarCoords(cam.azimuth, cam.polar, cam.radius)
-	target := mgl32.Vec3{0, float32(cam.height), 0.0}
+	position := vecFromPolarCoords(cam.azimuth.Val, cam.polar.Val, cam.radius.Val)
+	target := mgl32.Vec3{0, float32(cam.height.Val), 0.0}
 	// Up is y-axis by default, in case camera is positioned close to y-axis, up
 	// vector will be in x-z plane, in direction opposite to camera position.
 	up := mgl32.Vec3{0, 1, 0}
-	if cam.polar < 0.1 {
-		up = vecFromPolarCoords(cam.azimuth + math.Pi, math.Pi / 2.0, 1.0)
+	if cam.polar.Val < 0.1 {
+		up = vecFromPolarCoords(cam.azimuth.Val + math.Pi, math.Pi / 2.0, 1.0)
 	}
 	cameraPosition := position.Add(target)
 	viewMatrix := mgl32.LookAtV(cameraPosition, target, up)
@@ -117,28 +117,6 @@ func vecFromPolarCoords(azimuth float64, polar float64, radius float64) mgl32.Ve
 		float32(math.Sin(polar) * math.Cos(azimuth) * radius),
 	}
 	return result
-}
-
-func updateAngles(current, target, dt float64) (newCurrent float64, newTarget float64) {
-	// These corrections to target make sure that we're going to update in direction of shortest path.
-	if target - current > math.Pi {
-		target -= math.Pi * 2.0
-	} else if current - target > math.Pi {
-		target += math.Pi * 2.0
-	}
-
-	// Update current angle so it's closer to target angle.
-	current += (target - current) * dt * cameraSpeed
-
-	// These corrections normalize to [0, 2 * pi] range (if both current value and target are outside).
-	if current > math.Pi * 2.0 && target > math.Pi * 2.0 {
-		current -= math.Pi * 2.0
-		target -= math.Pi * 2.0
-	} else if current < 0 && target < 0 {
-		current += math.Pi * 2.0
-		target += math.Pi * 2.0
-	}
-	return current, target
 }
 
 func clamp(val, min, max float64) float64 {

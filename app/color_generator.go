@@ -9,11 +9,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var requestData = []byte (`{"model": "default"}`)
 
 // GetRandomColorPalette returns a random color palette of 5 colors.
 func GetRandomColorPalette() [] mgl32.Vec4{
 	// Send a request to colormind.io.
+	var requestData = []byte (`{"model": "default"}`)
 	res, err := http.Post("http://colormind.io/api/", "text/json", bytes.NewBuffer(requestData))
 	if err != nil {
 		return nil

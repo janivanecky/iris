@@ -26,29 +26,6 @@ func init() {
 }
 
 // APP UI
-type Parameter interface {
-	Update(dt, speed float64)
-}
-
-type ColorParameter struct {
-	val, target mgl32.Vec4
-}
-
-func (color *ColorParameter) Update(dt, speed float64) {
-	color.val[0] += (color.target[0] - color.val[0]) * float32(dt * speed)
-	color.val[1] += (color.target[1] - color.val[1]) * float32(dt * speed)
-	color.val[2] += (color.target[2] - color.val[2]) * float32(dt * speed)
-	color.val[3] += (color.target[3] - color.val[3]) * float32(dt * speed)
-}
-
-type FloatParameter struct {
-	val, target float64
-}
-
-func (value *FloatParameter) Update(dt, speed float64) {
-	value.val += (value.target - value.val) * dt * speed
-}
-
 func uiItemControl(hover, hot, active bool) (bool, bool) {
 	if hover {
 		hot = true
@@ -205,9 +182,9 @@ func main() {
 	colorChannel := make(chan []mgl32.Vec4, 1)
 
 	// Colors parameters
-	colorsParams := make([]ColorParameter, 0)
+	colorsParams := make([]app.ColorParameter, 0)
 	for _, color := range settings.Cells.Colors {
-		colorsParams = append(colorsParams, ColorParameter{color, color})
+		colorsParams = append(colorsParams, app.ColorParameter{color, color})
 	}
 
 	// CIRCLE
@@ -240,8 +217,8 @@ func main() {
 	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 50, float32(windowHeight) * 0.15}
 	
 	// Count controller parameters
-	countSliderColor := ColorParameter{uiColor, uiColor}
-	countSliderValue := FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
+	countSliderColor := app.ColorParameter{uiColor, uiColor}
+	countSliderValue := app.FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
 	countSliderHot, countSliderActive := false, false
 
 	// LOAD BAR
@@ -255,15 +232,15 @@ func main() {
 	deleteBarColorHidden := mgl32.Vec4{0,0,0,0}
 	
 	// Load bar parameters
-	loadBarStart := FloatParameter{0,0}
-	loadBarColor := ColorParameter{uiColor, uiColor}
-	loadBarDeleteButtonColors := make([]ColorParameter, 0)
-	loadBarSettingsColors := make([]ColorParameter, 0)
+	loadBarStart := app.FloatParameter{0,0}
+	loadBarColor := app.ColorParameter{uiColor, uiColor}
+	loadBarDeleteButtonColors := make([]app.ColorParameter, 0)
+	loadBarSettingsColors := make([]app.ColorParameter, 0)
 	for i := 0; i < settingsCount; i++ {
-		loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
-		loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{settingsColor, settingsColor})
+		loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, app.ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+		loadBarSettingsColors = append(loadBarSettingsColors, app.ColorParameter{settingsColor, settingsColor})
 	}
-	loadBarHide := FloatParameter{-loadBarWidth + loadBarHideWidth,-loadBarWidth + loadBarHideWidth}
+	loadBarHide := app.FloatParameter{-loadBarWidth + loadBarHideWidth,-loadBarWidth + loadBarHideWidth}
 
 	// Runtime variables
 	showUI := false
@@ -324,13 +301,13 @@ func main() {
 		select {
 		case newColors := <-colorChannel:
 			for i := range colorsParams {
-				colorsParams[i].target = newColors[i]
+				colorsParams[i].Target = newColors[i]
 			}
 		default:
 		}
 		for i := range settings.Cells.Colors {
 			colorsParams[i].Update(dt, 5.0)
-			settings.Cells.Colors[i] = colorsParams[i].val
+			settings.Cells.Colors[i] = colorsParams[i].Val
 		}
 		// UI
 		// Let's quit if user presses Esc, that cannot mean anything else.
@@ -410,7 +387,7 @@ func main() {
 		}
 		
 		// LOAD BAR
-		loadBarPos := mgl32.Vec2{float32(loadBarHide.val), 0}
+		loadBarPos := mgl32.Vec2{float32(loadBarHide.Val), 0}
 		loadBarSize := mgl32.Vec2{float32(loadBarWidth), float32(windowHeight)}
 		aspectRatio := float32(windowHeight) / float32(windowWidth)
 		
@@ -418,25 +395,25 @@ func main() {
 		saveSize := mgl32.Vec2{settingsSize[0], 50}
 		
 		if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, loadBarPos, loadBarSize) {
-			loadBarHide.target = 0.0
+			loadBarHide.Target = 0.0
 			scrollDelta := platform.GetMouseWheelDelta()
-			loadBarStart.target += scrollDelta * 50.0
-			if loadBarStart.target > 0 {
-				loadBarStart.target = 0.0
+			loadBarStart.Target += scrollDelta * 50.0
+			if loadBarStart.Target > 0 {
+				loadBarStart.Target = 0.0
 			}
 
 			maxHeight := 10 + float64(settingsCount) * (float64(settingsSize[1]) + 10) + float64(saveSize[1] + 10)
 			lowerBorderMax := math.Max(0.0, float64(windowHeight) - maxHeight)
-			if float64(windowHeight) - (loadBarStart.target + maxHeight) > lowerBorderMax {
-				loadBarStart.target = float64(windowHeight) - lowerBorderMax - maxHeight
+			if float64(windowHeight) - (loadBarStart.Target + maxHeight) > lowerBorderMax {
+				loadBarStart.Target = float64(windowHeight) - lowerBorderMax - maxHeight
 			}
-			loadBarColor.target = uiColorHover
+			loadBarColor.Target = uiColorHover
 		} else {
-			loadBarHide.target = -loadBarWidth + loadBarHideWidth
-			loadBarColor.target = inactiveUIColor
+			loadBarHide.Target = -loadBarWidth + loadBarHideWidth
+			loadBarColor.Target = inactiveUIColor
 		}
 
-		app.DrawUIRect(loadBarPos, loadBarSize, loadBarColor.val, 0)
+		app.DrawUIRect(loadBarPos, loadBarSize, loadBarColor.Val, 0)
 
 		for i := range loadBarDeleteButtonColors {
 			loadBarDeleteButtonColors[i].Update(dt, 8.0)
@@ -448,7 +425,7 @@ func main() {
 
 		{
 			savePos := mgl32.Vec2{
-				(loadBarSize[0] - saveSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth), 10 + float32(loadBarStart.val),
+				(loadBarSize[0] - saveSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth), 10 + float32(loadBarStart.Val),
 			}
 			saveColor := mgl32.Vec4{0,1,0.5,0.8}
 
@@ -458,8 +435,8 @@ func main() {
 					imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 					texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 					settingsTextures = append(settingsTextures, texture)
-					loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
-					loadBarSettingsColors = append(loadBarSettingsColors, ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+					loadBarDeleteButtonColors = append(loadBarDeleteButtonColors, app.ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
+					loadBarSettingsColors = append(loadBarSettingsColors, app.ColorParameter{deleteBarColorHidden, deleteBarColorHidden})
 
 					settingsCount = app.SaveSettings(settings)
 				}
@@ -475,7 +452,7 @@ func main() {
 			settings := app.GetSettings(i)
 			settingsPos := mgl32.Vec2{
 				(loadBarSize[0] - settingsSize[0]) * 0.5 + loadBarPos[0] + (loadBarPos[0] / float32(loadBarWidth)) * float32(loadBarHideWidth),
-				float32(settingsCount - i) * 10 + float32(settingsCount - 1 - i) * settingsSize[1] + float32(loadBarStart.val)+ 10 + saveSize[1],
+				float32(settingsCount - i) * 10 + float32(settingsCount - 1 - i) * settingsSize[1] + float32(loadBarStart.Val)+ 10 + saveSize[1],
 			}
 
 			if settingsPos[0] + settingsSize[0] < 0.0 {
@@ -486,31 +463,31 @@ func main() {
 			deleteButtonSize := mgl32.Vec2{70, settingsSize[1]}
 			deleteButtonPos := mgl32.Vec2{settingsPos[0] + settingsSize[0] - deleteButtonSize[0], settingsPos[1]}
 			
-			deleteButtonColor := loadBarDeleteButtonColors[i].val
+			deleteButtonColor := loadBarDeleteButtonColors[i].Val
 			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, settingsPos, settingsSize) {
-				loadBarSettingsColors[i].target = settingsColorHover
+				loadBarSettingsColors[i].Target = settingsColorHover
 				if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, deleteButtonPos, deleteButtonSize) {
-					loadBarDeleteButtonColors[i].target = deleteBarColorHover
+					loadBarDeleteButtonColors[i].Target = deleteBarColorHover
 					if platform.IsMouseLeftButtonPressed() {
 						toRemove = i
 					}
 				} else {
-					loadBarDeleteButtonColors[i].target = deleteBarColor
+					loadBarDeleteButtonColors[i].Target = deleteBarColor
 					if platform.IsMouseLeftButtonPressed() {
 						settings = app.GetSettings(i)
 						camera.SetStateWithTransition(settings.Camera.Radius, settings.Camera.Azimuth,
 													  							settings.Camera.Polar, settings.Camera.Height)
-						countSliderValue.target = float64(settings.Cells.Count)
+						countSliderValue.Target = float64(settings.Cells.Count)
 						outerCircle.Radius.Target = settings.Cells.RadiusMax
 						innerCircle.Radius.Target = settings.Cells.RadiusMin
 						for i := range colorsParams {
-							colorsParams[i].target = settings.Cells.Colors[i]
+							colorsParams[i].Target = settings.Cells.Colors[i]
 						}
 					}
 				}
 			} else {
-				loadBarDeleteButtonColors[i].target = deleteBarColorHidden
-				loadBarSettingsColors[i].target = settingsColor
+				loadBarDeleteButtonColors[i].Target = deleteBarColorHidden
+				loadBarSettingsColors[i].Target = settingsColor
 			}
 			app.DrawUIRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
 
@@ -519,7 +496,7 @@ func main() {
 			app.DrawUIRectTextured(trashCanPos, trashCanSize, trashIconTexture, mgl32.Vec4{1,1,1,deleteButtonColor[3]}, 1)
 
 			texture := settingsTextures[i]
-			app.DrawUIRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].val, 0)
+			app.DrawUIRectTextured(settingsPos, settingsSize, texture, loadBarSettingsColors[i].Val, 0)
 
 			textPos := mgl32.Vec2{settingsPos[0] + 10, settingsPos[1] + 5}
 			app.DrawUIText("#" + strconv.Itoa(i), &infoFont, textPos, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{0,0}, 0)
@@ -594,9 +571,9 @@ func main() {
 			countSliderHover := isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, countSliderBgPos, countSliderBgSize)
 			countSliderHot, countSliderActive = uiItemControl(countSliderHover, countSliderHot, countSliderActive)
 			if countSliderHot || countSliderActive {
-				countSliderColor.target = uiColorHover
+				countSliderColor.Target = uiColorHover
 			} else {
-				countSliderColor.target = inactiveUIColor
+				countSliderColor.Target = inactiveUIColor
 			}
 			if countSliderActive {
 				portion := 1.0 - (float32(mouseY) - countSliderBgPos[1]) / countSliderBgSize[1]
@@ -606,21 +583,21 @@ func main() {
 					portion = 1.0
 				}
 				portion = float32(math.Max(0.0, math.Min(float64(portion), 1.0)))
-				countSliderValue.target = float64(portion) * 10000.0
+				countSliderValue.Target = float64(portion) * 10000.0
 			}
-			settings.Cells.Count = int(countSliderValue.val)
+			settings.Cells.Count = int(countSliderValue.Val)
 			if settings.Cells.Count > 10000 {
 				settings.Cells.Count = 10000
 			}
 			countSliderColor.Update(dt, 5.0)
 			countSliderValue.Update(dt, 15.0)
 			
-			portion := float32(countSliderValue.val) / 10000.0
+			portion := float32(countSliderValue.Val) / 10000.0
 			countSliderSize := mgl32.Vec2{countSliderBgSize[0], countSliderBgSize[1] * portion}
 			countSliderPos := mgl32.Vec2{countSliderBgPos[0], countSliderBgPos[1] + countSliderBgSize[1] - countSliderSize[1]}
 
-			app.DrawUIRect(countSliderBgPos, countSliderBgSize, countSliderColor.val, 0)
-			app.DrawUIRect(countSliderPos, countSliderSize, countSliderColor.val, 0)
+			app.DrawUIRect(countSliderBgPos, countSliderBgSize, countSliderColor.Val, 0)
+			app.DrawUIRect(countSliderPos, countSliderSize, countSliderColor.Val, 0)
 		}
 
 		drawCells(cells, settings.Cells, cube)

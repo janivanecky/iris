@@ -2,7 +2,6 @@
 DOING
 =========================
 - wonky:
-    - cells.go
     - main.go
     - settings.go
 
@@ -10,6 +9,7 @@ DOING
 TODO
 =========================
 MAINTENANCE
+- move helper functions from camera.go to separate file
 - is render_scene.go:GetSceneBuffer needed?
 - renderUI uses UI lib directly, maybe shouldn't?
 - renderScene, renderUI should accept target buffer as parameter
@@ -59,8 +59,10 @@ MAYBE NOT?
 =========================
 DONE
 =========================
-06/07/19
-- circle.go
+06/03/19
+- cleanup circle.go
+- cleanup cells.go
+
 
 03/03/19
 - add parameters.go

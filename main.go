@@ -120,7 +120,7 @@ func InvertBytes (bytes []byte, rowLength, rowCount int) []byte{
 
 // APP RENDER
 func drawCells(cells []app.Cell, cellsSettings app.CellSettings, mesh graphics.Mesh) {
-	matrices := app.GetCellMatrices(cells, cellsSettings.RadiusMin, cellsSettings.RadiusMax, cellsSettings.PolarStd,
+	matrices := app.GetCellModelMatrices(cells, cellsSettings.RadiusMin, cellsSettings.RadiusMax, cellsSettings.PolarStd,
 		cellsSettings.PolarMean,cellsSettings.HeightRatio, cellsSettings.Count)
 	colors := app.GetCellColors(cells, cellsSettings.Colors, cellsSettings.Count)
 	app.DrawMeshInstanced(mesh, matrices, colors, cellsSettings.Count)
@@ -154,8 +154,8 @@ func main() {
 	settingsTextures := make([]graphics.Texture, 0)
 
 	// WINDOW 
-	var windowWidth = 800
-	var windowHeight = 600
+	var windowWidth = 1600
+	var windowHeight = 800
 	//windowWidth, windowHeight = platform.GetMonitorResolution()
 	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", false)
 	defer platform.ReleaseWindow()

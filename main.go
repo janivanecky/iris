@@ -126,6 +126,29 @@ func drawCells(cells []app.Cell, cellsSettings app.CellSettings, mesh graphics.M
 	app.DrawMeshInstanced(mesh, matrices, colors, cellsSettings.Count)
 }
 
+type Circle struct {
+	Color app.ColorParameter
+	Width app.FloatParameter
+	Radius app.FloatParameter
+	Arc app.RadianParameter
+}
+
+func GetCircle(color mgl32.Vec4, width, radius, angle float64) Circle {
+	return Circle {
+		app.ColorParameter{color, color},
+		app.FloatParameter{width, width},
+		app.FloatParameter{radius, radius},
+		app.RadianParameter{angle, angle},
+	}
+}
+
+func (circle *Circle) Update(dt float64) {
+	circle.Width.Update(dt, 10.0)
+	circle.Radius.Update(dt, 15.0)
+	circle.Color.Update(dt, 4.0)
+	circle.Arc.Update(dt, 6.0)
+}
+
 func main() {
 	settings, settingsCount := app.LoadSettings()
 	settingsTextures := make([]graphics.Texture, 0)
@@ -197,13 +220,13 @@ func main() {
 	uiFadeOutTime := 0.5
 
 	// Inner controller circle parameters
-	innerCircle := app.GetCircle(uiColor, circleWidth, settings.Cells.RadiusMin, 0)
+	innerCircle := GetCircle(uiColor, circleWidth, settings.Cells.RadiusMin, 0)
 	circleInnerHot, circleInnerActive := false, false
 	circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
 	circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 
 	// Outer controller circle parameters
-	outerCircle := app.GetCircle(uiColor, circleWidth, settings.Cells.RadiusMax, 0)
+	outerCircle := GetCircle(uiColor, circleWidth, settings.Cells.RadiusMax, 0)
 	circleOuterHot, circleOuterActive := false, false
 	circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
 	circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})

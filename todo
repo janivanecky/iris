@@ -3,7 +3,6 @@ DOING
 =========================
 - wonky:
     - cells.go
-    - circle.go
     - main.go
     - settings.go
 
@@ -60,6 +59,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+06/07/19
+- circle.go
+
 03/03/19
 - add parameters.go
 

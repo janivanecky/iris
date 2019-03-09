@@ -177,11 +177,6 @@ func (framebuffer *Framebuffer) addDepthAttachment(sampleCount int32) {
 	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
 }
 
-// SetFramebufferDefault sets default framebuffer (i.e. backbuffer) for rendering.
-func SetFramebufferDefault() {
-	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-}
-
 // SetFramebuffer sets specified framebuffer for rendering.
 func SetFramebuffer(framebuffer Framebuffer) {
 	// Bind framebuffer itself.

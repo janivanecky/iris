@@ -1,9 +1,6 @@
 =========================
 DOING
 =========================
-- wonky:
-    - main.go
-    - settings.go
 
 =========================
 TODO
@@ -11,19 +8,16 @@ TODO
 MAINTENANCE
 - move helper functions from camera.go to separate file
 - is render_scene.go:GetSceneBuffer needed?
-- renderUI uses UI lib directly, maybe shouldn't?
-- renderScene, renderUI should accept target buffer as parameter
-- Pipelines as parameters to drawXXXX (?)
-- main.go is two spaces instead of four?
 - remove global states?
 - circle UI function
 - load bar functions
 - do app specific UI properly
 - cleanup shaders
 - cleanup UI.go
+- cleanup settings.go
+- cleanup input.go
 - cleanup main.go
 - optimize so running 60fps on integrated card
-- redo as async systems?
 - camera shouldn't communicate with UI
 - input.go can be potentially significantly reduced
 - DPI scaling cleanup
@@ -59,6 +53,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+08/03/19
+- renderScene, renderUI should accept target buffer as parameter
+
 06/03/19
 - cleanup circle.go
 - cleanup cells.go

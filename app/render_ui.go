@@ -7,7 +7,6 @@ import (
 	
 	"../lib/font"
 	"../lib/graphics"
-	"../lib/ui"
 )
 
 // Pipelines used for UI rendering.
@@ -167,7 +166,6 @@ func ResetUI() {
 		textEntities[i] 		= textEntities[i][:0]
 		texturedRectEntities[i] = texturedRectEntities[i][:0]
 	}
-	ui.Clear()
 }
 
 // DrawUIRect sets rectangle to be drawn in UI next frame.
@@ -197,7 +195,6 @@ func getModelMatrix(x, y, sx, sy float32) mgl32.Mat4 {
 	return modelMatrix
 }
 
-// TODO: pipeline - should be passed as param? There's already strong assumption on uniforms it has.
 func drawRect(pipeline graphics.Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color mgl32.Vec4) {
 	// Set up transformation parameters.
 	x, y := pos[0], -pos[1]
@@ -210,7 +207,6 @@ func drawRect(pipeline graphics.Pipeline, pos mgl32.Vec2, size mgl32.Vec2, color
 	graphics.DrawMesh(uiQuad)
 }
 
-// TODO: pipeline - should be passed as param? There's already strong assumption on uniforms it has.
 func drawRectTexture(pipeline graphics.Pipeline, pos mgl32.Vec2, size mgl32.Vec2, texture graphics.Texture, color mgl32.Vec4) {
 	// Set up transformation parameters.
 	x, y := pos[0], -pos[1]
@@ -243,7 +239,6 @@ func getFontTexture(font *font.Font) graphics.Texture {
 	return texture
 }
 
-// TODO: pipeline - should be passed as param? There's already strong assumption on uniforms it has.
 func drawText(pipeline graphics.Pipeline, text string, font *font.Font, position mgl32.Vec2, color mgl32.Vec4, origin mgl32.Vec2) {
 	// Set font texture.
 	fontTexture := getFontTexture(font)

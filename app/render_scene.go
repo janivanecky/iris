@@ -35,7 +35,6 @@ var bufferSSAO graphics.Framebuffer
 var bufferBlur graphics.Framebuffer
 var bufferShading graphics.Framebuffer
 var bufferEffect graphics.Framebuffer
-var bufferSceneUI graphics.Framebuffer
 
 // SSAO related data.
 var ssaoNoiseTexture graphics.Texture
@@ -146,9 +145,6 @@ func InitSceneRendering(windowWidth, windowHeight float64) {
 	bufferEffect = graphics.GetFramebuffer(
 		backbufferWidth, backbufferHeight, 1,
 		map[string]int32 {"color": gl.RGBA8}, false)
-	bufferSceneUI = graphics.GetFramebuffer(
-		backbufferWidth, backbufferHeight, 1,
-		map[string]int32 {"color": gl.RGBA8}, false)
 	
 	// Set up SSAO-related data.
 	ssaoKernels = getSSAOKernels()
@@ -172,7 +168,7 @@ func InitSceneRendering(windowWidth, windowHeight float64) {
 }
 
 // RenderScene sends commands to draw meshes gathered from DrawMeshXXX calls.
-func RenderScene(viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSettings) graphics.Framebuffer {
+func RenderScene(targetBuffer graphics.Framebuffer, viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSettings) {
 	// Set up 3D rendering settings - no blending and depth test.
 	graphics.DisableBlending()
 	graphics.EnableDepthTest()
@@ -293,9 +289,12 @@ func RenderScene(viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSet
 	graphics.DrawMesh(screenQuad)
 
 	// Blit scene into scene UI texture.
-	graphics.BlitFramebufferAttachment(bufferEffect, bufferSceneUI, "color", "color")
-
+	graphics.BlitFramebufferAttachment(bufferEffect, targetBuffer, "color", "")
+	
 	// Draw in-scene UI on top.
+	graphics.SetFramebuffer(targetBuffer)
+	graphics.SetFramebufferViewport(targetBuffer)
+
 	graphics.EnableBlending()
 	graphics.DisableDepthTest()
 
@@ -310,8 +309,6 @@ func RenderScene(viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSet
 	// Revert settings.
 	graphics.DisableBlending()
 	graphics.EnableDepthTest()
-
-	return bufferSceneUI
 }
 
 // ResetScene clears lists of meshes to draw.
@@ -337,7 +334,6 @@ func DrawMeshSceneUI(mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec
 	meshEntitiesSceneUI = append(meshEntitiesSceneUI, meshData{mesh, modelMatrix, color})
 }
 
-// TODO: pipeline - should be passed as param? There's already strong assumption on uniforms it has.
 func drawMesh(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix mgl32.Mat4, color mgl32.Vec4) {
 	pipeline.SetUniform("model_matrix", modelMatrix)
 	pipeline.SetUniform("color", color)

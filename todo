@@ -6,8 +6,6 @@ DOING
 TODO
 =========================
 MAINTENANCE
-- move helper functions from camera.go to separate file
-- is render_scene.go:GetSceneBuffer needed?
 - remove global states?
 - circle UI function
 - load bar functions
@@ -53,6 +51,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+09/03/19
+- move helper functions from camera.go to separate file
+
 08/03/19
 - renderScene, renderUI should accept target buffer as parameter
 

@@ -21,6 +21,14 @@ import (
 	"./lib/ui"
 )
 
+// Circle constants
+const circleWidth 	   = 0.75
+const circleWidthHover = 1.5
+var   uiColor 		   = mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
+var   uiColorHover 	   = mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
+var   uiColorInactive  = mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
+const uiFadeOutTime    = 0.5
+
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
@@ -151,87 +159,86 @@ func (circle *Circle) Update(dt float64) {
 }
 
 func main() {
-	// SETTINGS
 	settings, settingsCount := app.LoadSettings()
 	settingsTextures := make([]graphics.Texture, 0)
-
-	// WINDOW
+	
 	var windowWidth = 1600
 	var windowHeight = 800
 	//windowWidth, windowHeight = platform.GetMonitorResolution()
 	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", false)
 	defer platform.ReleaseWindow()
 
-	// UI
-	truetypeTitleBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
-	if err != nil {
-		panic(err)
+	var uiFont, uiFontTitle, infoFont font.Font
+	{
+		truetypeTitleBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
+		if err != nil {
+			panic(err)
+		}
+		truetypeNormalBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
+		if err != nil {
+			panic(err)
+		}
+		scale := platform.GetWindowScaling()
+		uiFont = font.GetFont(truetypeNormalBytes, 20.0, scale)
+		uiFontTitle = font.GetFont(truetypeTitleBytes, 34.0, scale)
+		infoFont = font.GetFont(truetypeNormalBytes, 32.0, scale)
 	}
-	truetypeNormalBytes, err := ioutil.ReadFile("fonts/Montserrat-Regular.ttf")
-	if err != nil {
-		panic(err)
-	}
-	scale := platform.GetWindowScaling()
-	uiFont := font.GetFont(truetypeNormalBytes, 20.0, scale)
-	uiFontTitle := font.GetFont(truetypeTitleBytes, 34.0, scale)
-	infoFont := font.GetFont(truetypeNormalBytes, 32.0, scale)
 
 	// Set up libraries
-	graphics.Init()
-	ui.Init(float64(windowWidth), float64(windowHeight), &uiFont, &uiFontTitle)
+	{
+		graphics.Init()
+		ui.Init(float64(windowWidth), float64(windowHeight), &uiFont, &uiFontTitle)
+	}
 
 	// Init renderers.
-	app.InitUIRendering(uiFont, float64(windowWidth), float64(windowHeight))
-	app.InitSceneRendering(float64(windowWidth), float64(windowHeight))
+	{
+		app.InitUIRendering(uiFont, float64(windowWidth), float64(windowHeight))
+		app.InitSceneRendering(float64(windowWidth), float64(windowHeight))
+	}
 	screenBuffer := graphics.GetFramebufferDefault()
 
-	// UI
-	trashIconFile, err := os.Open("trash.png")
-	if err != nil {
-		panic(err)
+	// Load trash icon.
+	var trashIconTexture graphics.Texture
+	{
+		trashIconFile, err := os.Open("trash.png")
+		if err != nil {
+			panic(err)
+		}
+		trashIconImg, _, err := image.Decode(trashIconFile)
+		if err != nil {
+			panic(err)
+		}
+		trashIconFile.Close()
+		trashIconImgData := trashIconImg.(*image.NRGBA)
+		width, height := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
+		invertedBytes := InvertBytes(trashIconImgData.Pix, trashIconImgData.Stride, height)
+		trashIconTexture = graphics.GetTextureUint8(width, height, 4, invertedBytes, true)
 	}
-	trashIconImg, _, err := image.Decode(trashIconFile)
-	if err != nil {
-		panic(err)
-	}
-	trashIconFile.Close()
-	trashIconImgData := trashIconImg.(*image.NRGBA)
-	width, height := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
-	invertedBytes := InvertBytes(trashIconImgData.Pix, trashIconImgData.Stride, height)
-	trashIconTexture := graphics.GetTextureUint8(width, height, 4, invertedBytes, true)
 
-	// CELLS
+	// Load cell mesh.
 	cube := graphics.GetMesh(cubeVertices[:], cubeIndices[:], []int{4, 4})
+
+	// Create cells array.
 	cells := make([]app.Cell, 10000)
 	app.GenerateCells(cells)
+
+	// Create channel used to update asynchronously cell colors.
 	colorChannel := make(chan []mgl32.Vec4, 1)
 
 	// Colors parameters
+	// TODO: Unified parameter manager?
 	colorsParams := make([]app.ColorParameter, 0)
 	for _, color := range settings.Cells.Colors {
 		colorsParams = append(colorsParams, app.ColorParameter{color, color})
 	}
 
-	// CIRCLE
-	// Circle constants
-	circleWidth := 0.75
-	circleWidthHover := 1.5
-	uiColor := mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
-	uiColorHover := mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
-	uiColorInactive := mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
-	uiFadeOutTime := 0.5
-
 	// Inner controller circle parameters
 	innerCircle := GetCircle(uiColor, circleWidth, settings.Cells.RadiusMin, 0)
 	circleInnerHot, circleInnerActive := false, false
-	circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
-	circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 
 	// Outer controller circle parameters
 	outerCircle := GetCircle(uiColor, circleWidth, settings.Cells.RadiusMax, 0)
 	circleOuterHot, circleOuterActive := false, false
-	circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
-	circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 
 	// SCREENSHOTS
 	screenshotTextDuration := 1.75
@@ -347,7 +354,7 @@ func main() {
 
 			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
 			stride := len(imageBytes) / int(imageHeight)
-			invertedBytes = InvertBytes(imageBytes, stride, int(imageHeight))
+			invertedBytes := InvertBytes(imageBytes, stride, int(imageHeight))
 			img := image.NewRGBA(image.Rect(0, 0, int(imageWidth), int(imageHeight)))
 			img.Pix = invertedBytes
 
@@ -561,7 +568,7 @@ func main() {
 			innerCircle.Update(dt)
 
 			circleVertices, circleIndices := getCircleMesh(innerCircle.Radius.Val, innerCircle.Width.Val, innerCircle.Arc.Val)
-			circleInner = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+			circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 			app.DrawMeshSceneUI(circleInner, mgl32.Ident4(), innerCircle.Color.Val)
 		}
 		settings.Cells.RadiusMin = innerCircle.Radius.Val
@@ -583,8 +590,8 @@ func main() {
 			outerCircle.Arc.Target = mouseAngle
 			outerCircle.Update(dt)
 
-			circleVertices, circleIndices = getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
-			circleOuter = graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
+			circleVertices, circleIndices := getCircleMesh(outerCircle.Radius.Val, outerCircle.Width.Val, outerCircle.Arc.Val)
+			circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
 			app.DrawMeshSceneUI(circleOuter, mgl32.Ident4(), outerCircle.Color.Val)
 		}
 		settings.Cells.RadiusMax = outerCircle.Radius.Val

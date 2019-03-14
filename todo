@@ -51,6 +51,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+13/03/19
+- circle_controller.go
+
 09/03/19
 - move helper functions from camera.go to separate file
 

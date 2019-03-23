@@ -208,7 +208,7 @@ func SetFramebufferTexture(framebuffer Framebuffer, attachment string, slot int)
 
 // GetFramebufferTexture returns framebuffer attachment as a texture.
 func GetFramebufferTexture(framebuffer Framebuffer, attachment string) Texture {
-	return Texture(framebuffer.attachments[attachment].buffer)
+	return Texture{framebuffer.attachments[attachment].buffer, int(framebuffer.width), int(framebuffer.height)}
 }
 
 // SetFramebufferViewport sets viewport to be full size of framebuffer.
@@ -258,5 +258,9 @@ func GetFramebufferPixels(framebuffer Framebuffer, attachmentName string) []byte
 	buffer := make([]byte, totalBytes)
 	// TODO: Check if necessary to pass dataType, maybe instead we can always pass gl.UNSIGNED_BYTE
 	gl.ReadPixels(0, 0, framebuffer.width, framebuffer.height, attachment.format, attachment.dataType, gl.Ptr(&buffer[0]))
-	return buffer
+
+	// OpenGL stores textures/buffers in row order bottom->top, so we need to invert it.
+	stride := int(framebuffer.width * perPixelBytes)
+	invertedBuffer := invertRows(buffer, stride, int(framebuffer.height))
+	return invertedBuffer
 }

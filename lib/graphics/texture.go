@@ -5,7 +5,11 @@ import (
 )
 
 // Texture is a handle to OpenGL texture.
-type Texture uint32
+type Texture struct {
+	texture 	  uint32
+	Width, Height int
+}
+//type Texture uint32
 
 var channelsToFormat = map[int]int32 {
 	1: gl.RED,
@@ -50,11 +54,16 @@ func GetTextureUint8(width int, height int, channels int, data []uint8, linearFi
 	if !ok {
 		panic("Incorrect number of channels! Must be 1, 3, or 4.")
 	}
+
+	// OpenGL requires textures to be in row order bottom->top, so we need to invert it.
+	stride := int(width * channels)
+	invertedBytes := invertRows(data, stride, height)
+
 	gl.TexImage2D(gl.TEXTURE_2D, 0, format, int32(width), int32(height),
-				  0, uint32(format), gl.UNSIGNED_BYTE, gl.Ptr(data))
+				  0, uint32(format), gl.UNSIGNED_BYTE, gl.Ptr(invertedBytes))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 
-	return Texture(textureID)
+	return Texture{textureID, width, height}
 }
 
 // GetTextureFloat32 creates an OpenGL texture with 32-bit float per channel
@@ -85,20 +94,48 @@ func GetTextureFloat32(width int, height int, channels int, data []float32, line
 	if !ok {
 		panic("Incorrect number of channels!")
 	}
-	gl.TexImage2D(gl.TEXTURE_2D, 0, internalFormat, int32(width), int32(height),
-				  0, uint32(format), gl.FLOAT, gl.Ptr(data))
+	// OpenGL requires textures to be in row order bottom->top, so we need to invert it.
+	stride := int(width * channels)
+	invertedBytes := invertRowsF32(data, stride, int(height))
 
-	return Texture(textureID)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, internalFormat, int32(width), int32(height),
+				  0, uint32(format), gl.FLOAT, gl.Ptr(invertedBytes))
+
+	return Texture{textureID, width, height}
 }
 
 // DelTexture releases texture from memory.
 func DelTexture(texture Texture) {
-	tex := uint32(texture)
-	gl.DeleteTextures(1, &tex)
+	gl.DeleteTextures(1, &texture.texture)
+	texture.texture = 0
 }
 
 // SetTexture binds a texture to specific slot.
 func SetTexture(texture Texture, slot int) {
 	gl.ActiveTexture(slotToEnum[slot])
-	gl.BindTexture(gl.TEXTURE_2D, uint32(texture)) 
+	gl.BindTexture(gl.TEXTURE_2D, texture.texture) 
+}
+
+func invertRows(bytes []byte, rowLength, rowCount int) []byte {
+	invertedBytes := make([]byte, len(bytes))
+	for i := 0; i < rowCount; i++ {
+		srcRowStart := i * rowLength
+		srcRowEnd := (i + 1) * rowLength
+		dstRowStart := (int(rowCount) - 1 - i) * rowLength
+		dstRowEnd := (int(rowCount) - i) * rowLength
+		copy(invertedBytes[dstRowStart:dstRowEnd], bytes[srcRowStart:srcRowEnd])
+	}
+	return invertedBytes
+}
+
+func invertRowsF32(bytes []float32, rowLength, rowCount int) []float32 {
+	invertedBytes := make([]float32, len(bytes))
+	for i := 0; i < rowCount; i++ {
+		srcRowStart := i * rowLength
+		srcRowEnd := (i + 1) * rowLength
+		dstRowStart := (int(rowCount) - 1 - i) * rowLength
+		dstRowEnd := (int(rowCount) - i) * rowLength
+		copy(invertedBytes[dstRowStart:dstRowEnd], bytes[srcRowStart:srcRowEnd])
+	}
+	return invertedBytes
 }

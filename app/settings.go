@@ -58,7 +58,7 @@ func copySettings(settings *AppSettings) AppSettings {
 
 var defaultSettings = AppSettings{
 	Cells: CellSettings{
-		PolarStd: 0.00, PolarMean: math.Pi / 2.0,
+		PolarStd: 0.02, PolarMean: math.Pi / 2.0,
 		RadiusMin: 3.0, RadiusMax: 15.0,
 		HeightRatio: 1.0,
 		Count: 5000,

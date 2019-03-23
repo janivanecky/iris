@@ -6,15 +6,13 @@ DOING
 TODO
 =========================
 MAINTENANCE
-- remove global states?
-- circle UI function
-- load bar functions
-- do app specific UI properly
+- countSetting.gof
 - cleanup shaders
 - cleanup UI.go
 - cleanup settings.go
 - cleanup input.go
 - cleanup main.go
+- cleanup settingsBar.go
 - optimize so running 60fps on integrated card
 - camera shouldn't communicate with UI
 - input.go can be potentially significantly reduced
@@ -22,6 +20,7 @@ MAINTENANCE
 - need to use DelTexture
 - remove panic from lib(?) + fmt.Println
 - cleanup shaders
+- isInRect in multiple files (?)
 
 FEATURES
 - z-fighting
@@ -51,6 +50,10 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+21/03/19
+- settingsBar.go
+- texture/framebuffer row inversion in graphics
+
 13/03/19
 - circle_controller.go
 

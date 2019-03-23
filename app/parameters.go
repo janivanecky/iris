@@ -23,6 +23,11 @@ type FloatParameter struct {
 
 func (p *FloatParameter) Update(dt, speed float64) {
 	p.Val += (p.Target - p.Val) * dt * speed
+	
+	// Prevent oscillating around the target value.
+	if math.Abs(p.Target - p.Val) < 0.05 {
+		p.Val = p.Target
+	}
 }
 
 type RadianParameter struct {

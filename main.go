@@ -6,7 +6,6 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"math"
-	"os"
 	"strconv"
 	"time"
 
@@ -76,6 +75,7 @@ func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2)
 
 // TODO: move, refactor
 const far, near = 500.0, 0.01
+//const near, far float32 = 0.01, 500.0
 
 func GetWorldRay(screenX, screenY float64,
 	screenWidth, screenHeight float64,
@@ -140,9 +140,11 @@ func main() {
 	}
 
 	// Init renderers.
+	sceneView := app.GetSceneView(int32(windowWidth), int32(windowHeight))
+	screenshotSceneView := app.GetSceneView(int32(4000.0), int32(4000.0))
 	{
 		app.InitUIRendering(uiFont, float64(windowWidth), float64(windowHeight))
-		app.InitSceneRendering(float64(windowWidth), float64(windowHeight))
+		app.InitSceneRendering()
 	}
 	screenBuffer := graphics.GetFramebufferDefault()
 
@@ -176,21 +178,7 @@ func main() {
 	countSliderValue := app.FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
 	countSliderHot, countSliderActive := false, false
 
-	// TODO: Shouldn't be here probably?
-	trashIconFile, err := os.Open("trash.png")
-	if err != nil {
-		panic(err)
-	}
-	trashIconImg, _, err := image.Decode(trashIconFile)
-	if err != nil {
-		panic(err)
-	}
-	trashIconFile.Close()
-	trashIconImgData := trashIconImg.(*image.NRGBA)
-	iconWidth, iconHeight := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
-	trashIconTexture := graphics.GetTextureUint8(iconWidth, iconHeight, 4, trashIconImgData.Pix, true)
-
-	settingsBar := app.GetSettingsBar(infoFont, trashIconTexture, float32(windowHeight))
+	settingsBar := app.GetSettingsBar(infoFont, float32(windowHeight))
 
 	// Runtime variables
 	showUI := false
@@ -201,9 +189,9 @@ func main() {
 	screenshotTextTimer := 0.0
 
 	// TODO: Should be here?
-	const near, far float32 = 0.01, 500.0
 	aspectRatio := float64(windowWidth)/float64(windowHeight)
 	projectionMatrix := mgl32.Perspective(mgl32.DegToRad(60.0), float32(aspectRatio), near, far)
+	projectionMatrixScreenshot := mgl32.Perspective(mgl32.DegToRad(60.0), 1.0, near, far)
 
 	// UI - depends on RENDERING
 	for i := 0; i < settingsCount; i++ {
@@ -212,10 +200,10 @@ func main() {
 		camera := app.GetCamera(settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height)
 		viewMatrix := camera.GetViewMatrix()
 
-		app.RenderScene(screenBuffer, viewMatrix, projectionMatrix, &settings.Rendering)
+		app.RenderScene(screenBuffer, sceneView, viewMatrix, projectionMatrix, &settings.Rendering)
 		app.ResetScene()
 
-		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
+		imageBytes, imageWidth, imageHeight := app.GetSceneBuffer(sceneView)
 		texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 		settingsBar.AddSettings(texture)
 	}
@@ -265,17 +253,6 @@ func main() {
 		}
 		if platform.IsKeyPressed(platform.KeyF2) {
 			showUI = !showUI
-		}
-
-		// SCREENSHOTS
-		if platform.IsKeyPressed(platform.KeyF10) {
-			screenshotTextTimer = screenshotTextDuration
-
-			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
-			img := image.NewRGBA(image.Rect(0, 0, int(imageWidth), int(imageHeight)))
-			img.Pix = imageBytes
-
-			app.SaveScreenshot(img)
 		}
 
 		// UI
@@ -336,7 +313,7 @@ func main() {
 		action, index := settingsBar.Update(dt, float32(mouseX), float32(mouseY), hideUI)
 		switch action {
 		case app.SAVE:
-			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer()
+			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer(sceneView)
 			texture := graphics.GetTextureUint8(int(imageWidth), int(imageHeight), 4, []uint8(imageBytes), true)
 			settingsBar.AddSettings(texture)
 
@@ -417,7 +394,21 @@ func main() {
 		drawCells(cells, settings.Cells, cube)
 		viewMatrix = camera.GetViewMatrix()
 		camera.Update(dt)
-		app.RenderScene(screenBuffer, viewMatrix, projectionMatrix, &settings.Rendering)
+		app.RenderScene(screenBuffer, sceneView, viewMatrix, projectionMatrix, &settings.Rendering)
+		
+
+		// SCREENSHOTS
+		if platform.IsKeyPressed(platform.KeyF10) {
+			screenshotTextTimer = screenshotTextDuration
+
+			app.RenderScene(screenBuffer, screenshotSceneView, viewMatrix, projectionMatrixScreenshot, &settings.Rendering)
+			imageBytes, imageWidth, imageHeight := app.GetSceneBuffer(screenshotSceneView)
+			img := image.NewRGBA(image.Rect(0, 0, int(imageWidth), int(imageHeight)))
+			img.Pix = imageBytes
+
+			app.SaveScreenshot(img)
+		}
+		
 		app.ResetScene()
 		
 		rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()

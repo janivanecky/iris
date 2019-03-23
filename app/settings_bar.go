@@ -56,8 +56,9 @@ var   saveButtonColorHover   = mgl32.Vec4{0, 1, 0.5, 1.0}
 var   saveTextColor  		 = mgl32.Vec4{0, 0, 0, 0.6}
 const saveButtonHeight 		 = 50.0
 
-func GetSettingsBar(font font.Font, deleteIcon graphics.Texture, height float32) SettingsBar {
+func GetSettingsBar(font font.Font, height float32) SettingsBar {
 	var settingsBar SettingsBar
+
 	settingsBar.PosX    		   = FloatParameter{settingsBarHiddenX, settingsBarHiddenX}
 	settingsBar.ContentY 		   = FloatParameter{0, 0}
 	settingsBar.Color   		   = ColorParameter{settingsBarColor, settingsBarColor}
@@ -65,22 +66,22 @@ func GetSettingsBar(font font.Font, deleteIcon graphics.Texture, height float32)
 	settingsBar.DeleteButtonColors = make([]ColorParameter, 0)
 	settingsBar.SettingsColors     = make([]ColorParameter, 0)
 	
-	settingsBar.height 	   = height
-	settingsBar.font 	   = font
+	settingsBar.height = height
+	settingsBar.font   = font
 	
-	trashIconFile, err := os.Open("trash.png")
+	// Load delete icon and create texture.
+	deleteIconFile, err := os.Open("trash.png")
 	if err != nil {
 		panic(err)
 	}
-	trashIconImg, _, err := image.Decode(trashIconFile)
+	deleteIconImg, _, err := image.Decode(deleteIconFile)
 	if err != nil {
 		panic(err)
 	}
-	trashIconFile.Close()
-	trashIconImgData := trashIconImg.(*image.NRGBA)
-	iconWidth, iconHeight := trashIconImgData.Bounds().Max.X, trashIconImgData.Bounds().Max.Y
-	deleteIcon = graphics.GetTextureUint8(iconWidth, iconHeight, 4, trashIconImgData.Pix, true)
-	settingsBar.deleteIcon = deleteIcon
+	deleteIconFile.Close()
+	deleteIconImgData := deleteIconImg.(*image.NRGBA)
+	iconWidth, iconHeight := deleteIconImgData.Bounds().Max.X, deleteIconImgData.Bounds().Max.Y
+	settingsBar.deleteIcon = graphics.GetTextureUint8(iconWidth, iconHeight, 4, deleteIconImgData.Pix, true)
 	
 	return settingsBar
 }

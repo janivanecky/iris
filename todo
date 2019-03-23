@@ -13,6 +13,8 @@ MAINTENANCE
 - cleanup input.go
 - cleanup main.go
 - cleanup settingsBar.go
+    - private/public members?
+- remove GetSceneBuffer()
 - optimize so running 60fps on integrated card
 - camera shouldn't communicate with UI
 - input.go can be potentially significantly reduced
@@ -21,6 +23,7 @@ MAINTENANCE
 - remove panic from lib(?) + fmt.Println
 - cleanup shaders
 - isInRect in multiple files (?)
+- sceneView.go?
 
 FEATURES
 - z-fighting
@@ -51,6 +54,7 @@ MAYBE NOT?
 DONE
 =========================
 21/03/19
+- SceneView
 - settingsBar.go
 - texture/framebuffer row inversion in graphics
 

@@ -256,7 +256,6 @@ func GetFramebufferPixels(framebuffer Framebuffer, attachmentName string) []byte
 	
 	// Read attachment pixels into a buffer.
 	buffer := make([]byte, totalBytes)
-	// TODO: Check if necessary to pass dataType, maybe instead we can always pass gl.UNSIGNED_BYTE
 	gl.ReadPixels(0, 0, framebuffer.width, framebuffer.height, attachment.format, attachment.dataType, gl.Ptr(&buffer[0]))
 
 	// OpenGL stores textures/buffers in row order bottom->top, so we need to invert it.

@@ -47,10 +47,6 @@ func GenerateCells(cells []Cell) {
 
 // GetCellModelMatrices returns an array of model matrices, each transforming a single cell into world space.
 func GetCellModelMatrices(cells []Cell, radiusMin, radiusMax, polarStd, polarMean, heightRatio float64, count int) []mgl32.Mat4{
-	// TODO: This conversion should happen on UI side, not here
-	radiusMin = radiusMin + 4.0
-	radiusMax = radiusMax - 4.0
-
 	matrices := make([]mgl32.Mat4, count)
 	
 	for i, cell := range cells[:count] {

@@ -19,7 +19,7 @@ type SettingsBar struct {
 	SettingsColors     []ColorParameter
 	SettingsTextures   []graphics.Texture
 
-	height		       float32 // TODO: Should be f32 or f64?
+	height		       float64
 	font			   font.Font
 	deleteIcon         graphics.Texture
 }
@@ -56,7 +56,7 @@ var   saveButtonColorHover   = mgl32.Vec4{0, 1, 0.5, 1.0}
 var   saveTextColor  		 = mgl32.Vec4{0, 0, 0, 0.6}
 const saveButtonHeight 		 = 50.0
 
-func GetSettingsBar(font font.Font, height float32) SettingsBar {
+func GetSettingsBar(font font.Font, height float64) SettingsBar {
 	var settingsBar SettingsBar
 
 	settingsBar.PosX    		   = FloatParameter{settingsBarHiddenX, settingsBarHiddenX}
@@ -93,6 +93,7 @@ func (settingsBar *SettingsBar) AddSettings(texture graphics.Texture) {
 }
 
 func (settingsBar *SettingsBar) RemoveSettings(index int) {
+	graphics.DelTexture(settingsBar.SettingsTextures[index])
 	settingsBar.SettingsTextures   = append(settingsBar.SettingsTextures[:index], settingsBar.SettingsTextures[index + 1:]...)
 	settingsBar.SettingsColors     = append(settingsBar.SettingsColors[:index], settingsBar.SettingsColors[index + 1:]...)
 	settingsBar.DeleteButtonColors = append(settingsBar.DeleteButtonColors[:index], settingsBar.DeleteButtonColors[index + 1:]...)
@@ -104,7 +105,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 	returnAction, returnIndex := NONE, -1
 
 	barPos := mgl32.Vec2{float32(settingsBar.PosX.Val), 0}
-	barSize := mgl32.Vec2{float32(settingsBarWidth), settingsBar.height}
+	barSize := mgl32.Vec2{float32(settingsBarWidth), float32(settingsBar.height)}
 	
 	aspectRatio := float32(settingsBar.SettingsTextures[0].Width) / float32(settingsBar.SettingsTextures[1].Height)
 	settingSizeX := barSize[0] - settingPadding * 2.0
@@ -139,8 +140,8 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 			settingsPartHeight := float64(settingsCount) * (float64(settingSizeY) + settingPadding)
 			barContentHeight := saveButtonPartHeight + settingsPartHeight 
 			barContentBottom := settingsBar.ContentY.Target + barContentHeight
-			if barContentBottom < float64(settingsBar.height) {
-				settingsBar.ContentY.Target = float64(settingsBar.height) - barContentHeight
+			if barContentBottom < settingsBar.height {
+				settingsBar.ContentY.Target = settingsBar.height - barContentHeight
 			}
 		} else {
 			settingsBar.PosX.Target = settingsBarHiddenX

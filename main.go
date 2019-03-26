@@ -75,7 +75,6 @@ func isInRect(position mgl32.Vec2, rectPosition mgl32.Vec2, rectSize mgl32.Vec2)
 
 // TODO: move, refactor
 const far, near = 500.0, 0.01
-//const near, far float32 = 0.01, 500.0
 
 func GetWorldRay(screenX, screenY float64,
 	screenWidth, screenHeight float64,
@@ -99,6 +98,22 @@ func GetWorldRay(screenX, screenY float64,
 	return vNear, vDiff
 }
 
+func radiusMinCtrlToCell(radius float64) float64 {
+	return radius + 4.0
+}
+
+func radiusMinCellToCtrl(radius float64) float64 {
+	return radius - 4.0
+}
+
+func radiusMaxCtrlToCell(radius float64) float64 {
+	return radius - 4.0
+}
+
+func radiusMaxCellToCtrl(radius float64) float64 {
+	return radius + 4.0
+}
+
 // APP RENDER
 func drawCells(cells []app.Cell, cellsSettings app.CellSettings, mesh graphics.Mesh) {
 	matrices := app.GetCellModelMatrices(cells, cellsSettings.RadiusMin, cellsSettings.RadiusMax, cellsSettings.PolarStd,
@@ -112,6 +127,9 @@ func main() {
 	
 	var windowWidth = 1600
 	var windowHeight = 800
+
+	var screenshotWidth = windowWidth * 2
+	var screenshotHeight = windowHeight * 2
 	//windowWidth, windowHeight = platform.GetMonitorResolution()
 	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", false)
 	defer platform.ReleaseWindow()
@@ -141,7 +159,7 @@ func main() {
 
 	// Init renderers.
 	sceneView := app.GetSceneView(int32(windowWidth), int32(windowHeight))
-	screenshotSceneView := app.GetSceneView(int32(4000.0), int32(4000.0))
+	screenshotSceneView := app.GetSceneView(int32(screenshotWidth), int32(screenshotHeight))
 	{
 		app.InitUIRendering(uiFont, float64(windowWidth), float64(windowHeight))
 		app.InitSceneRendering()
@@ -178,7 +196,7 @@ func main() {
 	countSliderValue := app.FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
 	countSliderHot, countSliderActive := false, false
 
-	settingsBar := app.GetSettingsBar(infoFont, float32(windowHeight))
+	settingsBar := app.GetSettingsBar(infoFont, float64(windowHeight))
 
 	// Runtime variables
 	showUI := false
@@ -191,7 +209,7 @@ func main() {
 	// TODO: Should be here?
 	aspectRatio := float64(windowWidth)/float64(windowHeight)
 	projectionMatrix := mgl32.Perspective(mgl32.DegToRad(60.0), float32(aspectRatio), near, far)
-	projectionMatrixScreenshot := mgl32.Perspective(mgl32.DegToRad(60.0), 1.0, near, far)
+	projectionMatrixScreenshot := mgl32.Perspective(mgl32.DegToRad(60.0), float32(aspectRatio), near, far)
 
 	// UI - depends on RENDERING
 	for i := 0; i < settingsCount; i++ {
@@ -323,8 +341,8 @@ func main() {
 			camera.SetStateWithTransition(settings.Camera.Radius, settings.Camera.Azimuth,
 				settings.Camera.Polar, settings.Camera.Height)
 			countSliderValue.Target = float64(settings.Cells.Count)
-			outerCircleController.Radius.Target = settings.Cells.RadiusMax
-			innerCircleController.Radius.Target = settings.Cells.RadiusMin
+			outerCircleController.Radius.Target = radiusMaxCellToCtrl(settings.Cells.RadiusMax)
+			innerCircleController.Radius.Target = radiusMinCellToCtrl(settings.Cells.RadiusMin)
 			for i := range colorsParams {
 				colorsParams[i].Target = settings.Cells.Colors[i]
 			}
@@ -429,8 +447,8 @@ func main() {
 		window.SwapBuffers()
 
 		settings.Camera.Radius, settings.Camera.Azimuth, settings.Camera.Polar, settings.Camera.Height = camera.GetState()
-		settings.Cells.RadiusMin = innerCircleController.Radius.Val
-		settings.Cells.RadiusMax = outerCircleController.Radius.Val
+		settings.Cells.RadiusMin = radiusMinCtrlToCell(innerCircleController.Radius.Val)
+		settings.Cells.RadiusMax = radiusMaxCtrlToCell(outerCircleController.Radius.Val)
 	}
 	app.SaveActiveSettings(settings)
 }

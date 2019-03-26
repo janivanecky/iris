@@ -175,6 +175,9 @@ func InitSceneRendering() {
 
 // RenderScene sends commands to draw meshes gathered from DrawMeshXXX calls.
 func RenderScene(targetBuffer graphics.Framebuffer, sceneView SceneView, viewMatrix, projectionMatrix mgl32.Mat4, settings *RenderingSettings) {
+	// Disable SRGB rendering.
+	graphics.DisableSRGBRendering()
+	
 	// Set up 3D rendering settings - no blending and depth test.
 	graphics.DisableBlending()
 	graphics.EnableDepthTest()
@@ -346,7 +349,6 @@ func drawMesh(pipeline graphics.Pipeline, mesh graphics.Mesh, modelMatrix mgl32.
 	graphics.DrawMesh(mesh)
 }
 
-// TODO: instance buffers should be passed as args?
 func drawMeshInstanced(mesh graphics.Mesh, modelMatrix []mgl32.Mat4,
 					   color []mgl32.Vec4, count int32) {
 	graphics.UpdateInstanceBuffer(instanceModelBuffer, int(count), modelMatrix)

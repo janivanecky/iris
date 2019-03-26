@@ -6,7 +6,7 @@ DOING
 TODO
 =========================
 MAINTENANCE
-- countSetting.gof
+- countSetting.go
 - cleanup shaders
 - cleanup UI.go
 - cleanup settings.go
@@ -17,11 +17,10 @@ MAINTENANCE
 - remove GetSceneBuffer()
 - optimize so running 60fps on integrated card
 - camera shouldn't communicate with UI
-- input.go can be potentially significantly reduced
+- input.go can be potentially significantly reduced (keyboard handling)
 - DPI scaling cleanup
-- need to use DelTexture
+- settingsBar handles rendering of settings?
 - remove panic from lib(?) + fmt.Println
-- cleanup shaders
 - isInRect in multiple files (?)
 - sceneView.go?
 
@@ -53,6 +52,9 @@ MAYBE NOT?
 =========================
 DONE
 =========================
+25/03/19
+- address in-code TODOs
+
 21/03/19
 - SceneView
 - settingsBar.go

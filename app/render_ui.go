@@ -146,16 +146,6 @@ func RenderUI(targetBuffer graphics.Framebuffer) {
 			drawText(uiTextPipeline, textEntity.text, textEntity.font, textEntity.position, textEntity.color, textEntity.origin)
 		}
 	}
-	
-
-	// Disable SRGB rendering.
-	// TODO: Ideally we want to revert to original SRGB rendering state instead of always disabling.
-	graphics.DisableSRGBRendering()
-	
-	// Disable blending and enable depth test - "default" options.
-	// TODO: Ideally we want to revert to original rendering state instead of setting to specific values.
-	graphics.EnableDepthTest()
-	graphics.DisableBlending()
 }
 
 // ResetUI clears lists of meshes to draw.

@@ -14,15 +14,12 @@ MAINTENANCE
 - cleanup main.go
 - cleanup settingsBar.go
     - private/public members?
-- remove GetSceneBuffer()
 - optimize so running 60fps on integrated card
 - camera shouldn't communicate with UI
 - input.go can be potentially significantly reduced (keyboard handling)
 - DPI scaling cleanup
 - settingsBar handles rendering of settings?
-- remove panic from lib(?) + fmt.Println
 - isInRect in multiple files (?)
-- sceneView.go?
 
 FEATURES
 - z-fighting
@@ -44,10 +41,6 @@ NEEDS FIX
 - Is it low-res by accident? (Or is it due to DPI)
 - Banding SSAO?
 - If save bar extended and mouse goes outside, flickering
-
-MAYBE NOT?
-- instanced text rendering?
-- averaging fps display
 
 =========================
 DONE

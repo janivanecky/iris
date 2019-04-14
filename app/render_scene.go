@@ -27,17 +27,6 @@ var pipelineShading graphics.Pipeline
 var pipelineEffect graphics.Pipeline
 var pipelineSceneUI graphics.Pipeline
 
-type SceneView struct {
-	// Framebuffers used for 3D scene rendering.
-	bufferGeometry	 graphics.Framebuffer
-	bufferLight		 graphics.Framebuffer
-	bufferLightMS	 graphics.Framebuffer
-	bufferSSAO		 graphics.Framebuffer
-	bufferBlur		 graphics.Framebuffer
-	bufferShading	 graphics.Framebuffer
-	bufferEffect	 graphics.Framebuffer
-}
-
 // SSAO related data.
 var ssaoNoiseTexture graphics.Texture
 var ssaoKernels [16]mgl32.Vec3
@@ -83,6 +72,17 @@ type meshDataInstanced struct {
 var meshEntities 		  []meshData
 var meshEntitiesSceneUI   []meshData
 var meshEntitiesInstanced []meshDataInstanced
+
+type SceneView struct {
+	// Framebuffers used for 3D scene rendering.
+	bufferGeometry	 graphics.Framebuffer
+	bufferLight		 graphics.Framebuffer
+	bufferLightMS	 graphics.Framebuffer
+	bufferSSAO		 graphics.Framebuffer
+	bufferBlur		 graphics.Framebuffer
+	bufferShading	 graphics.Framebuffer
+	bufferEffect	 graphics.Framebuffer
+}
 
 func GetSceneView(windowWidth, windowHeight int32) SceneView {
 	var sceneView SceneView

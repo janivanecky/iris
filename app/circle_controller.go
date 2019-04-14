@@ -32,10 +32,10 @@ type CircleController struct {
 }
 
 // GetCircleController returns initialized CircleController.
-func GetCircleController(color mgl32.Vec4, width, radius, angle float64) CircleController {
+func GetCircleController(radius, angle float64) CircleController {
 	return CircleController{
-		ColorParameter{color, color},
-		FloatParameter{width, width},
+		ColorParameter{controllerColor, controllerColor},
+		FloatParameter{controllerWidth, controllerWidth},
 		FloatParameter{radius, radius},
 		RadianParameter{angle, angle},
 		false, false,

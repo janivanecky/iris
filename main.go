@@ -20,9 +20,7 @@ import (
 	"./lib/ui"
 )
 
-// Circle constants
-const circleWidth 	   = 0.75
-const circleWidthHover = 1.5
+// UI constants
 const uiFadeOutTime    = 0.5
 var   uiColor 		   = mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
 var   uiColorHover 	   = mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
@@ -31,16 +29,6 @@ var   uiColorInactive  = mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
 // Screenshot constants
 const screenshotTextDuration 	 = 1.75
 const screenshotTextFadeDuration = 1.0
-
-// Settings bar constants
-const settingsBarWidth 		 = 500.0
-const settingsBarWidthHidden = 50.0
-var settingsBarColor 				  = mgl32.Vec4{1, 1, 1, 0.8}
-var settingsBarColorHover 			  = mgl32.Vec4{1, 1, 1, 1.0}
-var settingsDeleteButtonColor 		  = mgl32.Vec4{1, 0, 0, 0.5}
-var settingsDeleteButtonColorHover    = mgl32.Vec4{1, 0, 0, 0.9}
-var settingsDeleteButtonColorInactive = mgl32.Vec4{0, 0, 0, 0}
-
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -183,8 +171,8 @@ func main() {
 	}
 
 	// Circle controllers
-	innerCircleController := app.GetCircleController(uiColor, circleWidth, settings.Cells.RadiusMin, 0)
-	outerCircleController := app.GetCircleController(uiColor, circleWidth, settings.Cells.RadiusMax, 0)
+	innerCircleController := app.GetCircleController(settings.Cells.RadiusMin, 0)
+	outerCircleController := app.GetCircleController(settings.Cells.RadiusMax, 0)
 
 	// COUNTS
 	// TODO: move to specific file
@@ -206,7 +194,6 @@ func main() {
 	timeSinceMouseMovement := 0.0
 	screenshotTextTimer := 0.0
 
-	// TODO: Should be here?
 	aspectRatio := float64(windowWidth)/float64(windowHeight)
 	projectionMatrix := mgl32.Perspective(mgl32.DegToRad(60.0), float32(aspectRatio), near, far)
 	projectionMatrixScreenshot := mgl32.Perspective(mgl32.DegToRad(60.0), float32(aspectRatio), near, far)

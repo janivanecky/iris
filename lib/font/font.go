@@ -117,21 +117,6 @@ func GetFont(bytes []uint8, size float64, dpiScale float64) Font {
 		x += bitmapWidth + bitmapSpacing
 	}
 
-	// Lastly we need to revert the order of rows in the font texture, because OpenGL requires bottom-up ordering.
-	tempPixels := make([]uint8, texSize)
-	for sourceRow, targetRow := 0, texSize - 1; sourceRow < texSize/2; sourceRow, targetRow = sourceRow+1, targetRow-1 {
-		// Get start-end indices for rows being swapped.
-		sourceIndexStart := sourceRow * texSize
-		sourceIndexEnd := sourceIndexStart + texSize
-		targetIndexStart := targetRow * texSize
-		targetIndexEnd := targetIndexStart + texSize
-
-		// Swap.
-		copy(tempPixels, font.Texture[sourceIndexStart:sourceIndexEnd])
-		copy(font.Texture[sourceIndexStart:sourceIndexEnd], font.Texture[targetIndexStart:targetIndexEnd])
-		copy(font.Texture[targetIndexStart:targetIndexEnd], tempPixels)
-	}
-
 	return font
 }
 

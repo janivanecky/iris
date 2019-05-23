@@ -1,6 +1,11 @@
 =========================
 DOING
 =========================
+- add key shortcuts help
+
+- README.md
+
+- optimize so running 60fps on integrated card
 
 =========================
 TODO
@@ -14,37 +19,32 @@ MAINTENANCE
 - cleanup main.go
 - cleanup settingsBar.go
     - private/public members?
-- optimize so running 60fps on integrated card
 - camera shouldn't communicate with UI
-- input.go can be potentially significantly reduced (keyboard handling)
-- DPI scaling cleanup
+- input.go can be potentially significantly reduced (keyboard string handling)
 - settingsBar handles rendering of settings?
 - isInRect in multiple files (?)
+- separate settings from displayed stuff - settings should have target, not interpolated values always!
 
 FEATURES
-- z-fighting
 - better slider (needs a replacement)
-- make window movable and exitable by click
-- add key shortcuts help
 - UI for selecting colors (with pre-fetching)
-- on click reaction (color/width)
-
-- rotation of the whole thing using circle?
 - screenshot in 4k
 - screenshot effect? (flash)
 - circle uses depth buffer
-- separate settings from displayed stuff - settings should have target, not interpolated values always!
 - optimize circle generation, so we don't have to re-generate/re-allocate that often
+- on click reaction (color/width changes)
 
 NEEDS FIX
-- Why is rendering settings random at start?
-- Is it low-res by accident? (Or is it due to DPI)
+- z-fighting
+- Why is sometimes rendering settings random at start?
 - Banding SSAO?
-- If save bar extended and mouse goes outside, flickering
 
 =========================
 DONE
 =========================
+22/05/19
+- If save bar extended and mouse goes outside, flickering
+
 25/03/19
 - address in-code TODOs
 

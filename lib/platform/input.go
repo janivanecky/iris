@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"math"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
@@ -30,6 +31,10 @@ func initInput(window *glfw.Window) {
 	keyPressed = make(map[Key]bool)
 }
 
+func clamp(val, min, max float64) float64 {
+	return math.Max(min, math.Min(val, max))
+}
+
 func Update(window *glfw.Window) {
 	glfw.PollEvents()
 	
@@ -41,6 +46,9 @@ func Update(window *glfw.Window) {
 
 	// Update mouse position and get position delta.
 	x, y := window.GetCursorPos()
+	wx, wy := window.GetSize()
+	x = clamp(x, 0, float64(wx))
+	y = clamp(y, 0, float64(wy))
 	x, y = x / windowScale, y / windowScale
 	if mouseX > 0.0 && mouseY > 0.0 {
 		dmouseX, dmouseY = x - mouseX, y - mouseY

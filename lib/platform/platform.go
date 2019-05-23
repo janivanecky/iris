@@ -1,7 +1,7 @@
 package platform
 
 import (
-	//"syscall"
+	"syscall"
 	"runtime"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -22,18 +22,17 @@ func init() {
 
 
 func GetWindowScaling() float64 {
-	//dll, err := syscall.LoadDLL("User32.dll")
-	//if err != nil {
-	//	return 1.0
-	//}
-	//dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
-	//dpi, errCode, _ := dpiForSystem.Call()
-	//if errCode > 0 {
-	//	return 1.0
-	//}
-	//scale := float64(dpi) / 96.0
-	return 2.0
-	//return scale
+	dll, err := syscall.LoadDLL("User32.dll")
+	if err != nil {
+		return 1.0
+	}
+	dpiForSystem, _ := dll.FindProc("GetDpiForSystem")
+	dpi, errCode, _ := dpiForSystem.Call()
+	if errCode > 0 {
+		return 1.0
+	}
+	scale := float64(dpi) / 96.0
+	return scale
 }
 
 // GetMonitorResolution returns current monitor's resolution in pixels.

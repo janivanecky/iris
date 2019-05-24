@@ -1,8 +1,7 @@
 =========================
 DOING
 =========================
-- add key shortcuts help
-
+- place advanced settings in a better position
 - README.md
 
 - optimize so running 60fps on integrated card
@@ -42,6 +41,9 @@ NEEDS FIX
 =========================
 DONE
 =========================
+23/05/19
+- add key shortcuts help
+
 22/05/19
 - If save bar extended and mouse goes outside, flickering
 

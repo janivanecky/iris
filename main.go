@@ -21,7 +21,7 @@ import (
 )
 
 // UI constants
-const uiFadeOutTime    = 0.5
+const uiFadeOutTime    = 1.5
 var   uiColor 		   = mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
 var   uiColorHover 	   = mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
 var   uiColorInactive  = mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
@@ -176,13 +176,19 @@ func main() {
 
 	// COUNTS
 	// TODO: move to specific file
-	countSliderBgSize := mgl32.Vec2{50.0, float32(windowHeight) * 0.7}
-	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 50, float32(windowHeight) * 0.15}
+	countSliderBgSize := mgl32.Vec2{50.0, float32(windowHeight) * 0.4}
+	countSliderBgPos := mgl32.Vec2{float32(windowWidth) - countSliderBgSize[0] - 50, (float32(windowHeight) - countSliderBgSize[1]) / 2.0}
 
 	// Count controller parameters
 	countSliderColor := app.ColorParameter{uiColor, uiColor}
 	countSliderValue := app.FloatParameter{float64(settings.Cells.Count), float64(settings.Cells.Count)}
 	countSliderHot, countSliderActive := false, false
+	
+	// Help parameters
+	helpOffsetRight := float32(100.0)
+	helpOffsetTop := 10.0
+	helpAlpha := app.FloatParameter{1.0, 1.0}
+	helpColor := app.ColorParameter{uiColor, uiColor}
 
 	settingsBar := app.GetSettingsBar(infoFont, float64(windowHeight))
 
@@ -259,6 +265,13 @@ func main() {
 		if platform.IsKeyPressed(platform.KeyF2) {
 			showUI = !showUI
 		}
+		if platform.IsKeyPressed(platform.KeyF1) {
+			if helpAlpha.Target == 0.0 {
+				helpAlpha.Target = 1.0
+			} else {
+				helpAlpha.Target = 0.0
+			}
+		}
 
 		// UI
 		if showUI {
@@ -276,7 +289,7 @@ func main() {
 
 			// Colors/material related settings.
 			nextWidth := panel.GetWidth()
-			panel = ui.StartPanel("Material", mgl32.Vec2{float32(windowWidth) - 10 - nextWidth, 10}, float64(nextWidth))
+			panel = ui.StartPanel("Material", mgl32.Vec2{100, panel.GetBottom()}, float64(nextWidth))
 			settings.Rendering.Roughness, _ = panel.AddSlider("Roughness", settings.Rendering.Roughness, 0, 1.0)
 			settings.Rendering.Reflectivity, _ = panel.AddSlider("Reflectivity", settings.Rendering.Reflectivity, 0, 1.0)
 			for i := range settings.Cells.Colors {
@@ -286,6 +299,7 @@ func main() {
 				}
 			}
 			panel.End()
+			
 		}
 
 		fpsString := fmt.Sprintf("%d", fps)
@@ -395,6 +409,29 @@ func main() {
 			app.DrawUIRect(countSliderBgPos, countSliderBgSize, countSliderColor.Val, 0)
 			app.DrawUIRect(countSliderPos, countSliderSize, countSliderColor.Val, 0)
 		}
+
+		// Help update
+		helpAlpha.Update(dt, 5.0)
+		helpColor.Target = inactiveUIColor
+		helpColor.Update(dt, 5.0)
+		helpY := float32(helpOffsetTop);
+		helpX := float32(windowWidth) - helpOffsetRight
+		helpColorCurrent := helpColor.Val
+		helpColorCurrent[3] *= 1.5 * float32(helpAlpha.Val)
+		app.DrawUIText("show/hide help", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F1", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		helpY += float32(infoFont.RowHeight)
+		app.DrawUIText("change color", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- C", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		helpY += float32(infoFont.RowHeight)
+		app.DrawUIText("randomize cells", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- R", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		helpY += float32(infoFont.RowHeight)
+		app.DrawUIText("advanced settings", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F2", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		helpY += float32(infoFont.RowHeight)
+		app.DrawUIText("screenshot", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F10", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
 
 		drawCells(cells, settings.Cells, cube)
 		viewMatrix = camera.GetViewMatrix()

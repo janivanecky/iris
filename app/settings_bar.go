@@ -224,7 +224,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 			deleteIconOffsetX := (deleteButtonSize[0] - deleteIconSize[0]) * 0.5
 			deleteIconOffsetY := (deleteButtonSize[1] - deleteIconSize[1]) * 0.5
 			deleteIconPos := mgl32.Vec2{deleteButtonPos[0] + deleteIconOffsetX, deleteButtonPos[1] + deleteIconOffsetY}
-			DrawUIRectTextured(deleteIconPos, deleteIconSize, settingsBar.deleteIcon, mgl32.Vec4{1, 1, 1, deleteButtonColor[3]}, 1)
+			DrawUIRectTextured(deleteIconPos, deleteIconSize, settingsBar.deleteIcon, mgl32.Vec4{1, 1, 1, deleteButtonColor[3]}, layerFG)
 	
 			texture := settingsBar.SettingsTextures[i]
 			DrawUIRectTextured(settingsPos, settingSize, texture, settingsBar.SettingsColors[i].Val, layerBG)

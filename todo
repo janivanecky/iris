@@ -1,8 +1,10 @@
 =========================
 DOING
 =========================
-- place advanced settings in a better position
 - README.md
+- Why is sometimes rendering settings random at start?
+- iris title somewhere
+- when few settings, the settings bar is aligned to bottom side
 
 - optimize so running 60fps on integrated card
 
@@ -10,6 +12,7 @@ DOING
 TODO
 =========================
 MAINTENANCE
+- Handle DPI scaling on linux
 - countSetting.go
 - cleanup shaders
 - cleanup UI.go
@@ -35,12 +38,15 @@ FEATURES
 
 NEEDS FIX
 - z-fighting
-- Why is sometimes rendering settings random at start?
 - Banding SSAO?
 
 =========================
 DONE
 =========================
+24/05/19
+- place advanced settings in a better position
+- fix settings bar aspect ratio computation when no settings saved
+
 23/05/19
 - add key shortcuts help
 

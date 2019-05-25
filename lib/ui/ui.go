@@ -13,8 +13,8 @@ import (
 	"../platform"
 )
 
-var colorForeground mgl32.Vec4 = mgl32.Vec4{28.0 / 255.0,224.0 / 255.0,180.0 / 255.0,1}
-var colorBackground mgl32.Vec4 = mgl32.Vec4{0.8,0.8,0.8,0.4}
+var colorForeground mgl32.Vec4 = mgl32.Vec4{0.0, 0.0, 0.0, .2,}
+var colorBackground mgl32.Vec4 = mgl32.Vec4{0.8,0.8,0.8,0.8}
 var colorItems mgl32.Vec4 = mgl32.Vec4{0.35,0.35,0.35,1.0}
 var colorLabel mgl32.Vec4 = mgl32.Vec4{0.1,0.1,0.1,1.0}
 var colorHover mgl32.Vec4 = mgl32.Vec4{0,0,0,1}
@@ -115,20 +115,7 @@ func Init(windowWidth float64, windowHeight float64, font Font, titleFont Font) 
     uiFont = font
     uiTitleFont = titleFont
 
-    colorForeground = mgl32.Vec4{
-        float32(math.Pow(28.0 / 255.0, 2.2)), 
-        float32(math.Pow(224.0 / 255.0, 2.2)),
-        float32(math.Pow(180.0 / 255.0, 2.2)),
-        0.9,
-    }
-    colorForeground = mgl32.Vec4{
-        0.9, 0.9, 0.9, 0.6,
-    }
-    colorForeground = mgl32.Vec4{
-        0.0, 0.0, 0.0, .2,
-    }
-
-	screenHeight = windowHeight
+    screenHeight = windowHeight
     screenWidth = windowWidth
 
 }

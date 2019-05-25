@@ -18,6 +18,7 @@ type SettingsBar struct {
 	DeleteButtonColors []ColorParameter
 	SettingsColors     []ColorParameter
 	SettingsTextures   []graphics.Texture
+	Hidden			   bool
 
 	height		       float64
 	font			   font.Font
@@ -31,6 +32,9 @@ const (
 	DELETE = iota
 	SELECT = iota
 )
+
+const layerBG = 2
+const layerFG = 3
 
 const settingsBarWidth 		 = 500.0
 const settingsBarWidthHidden = 50.0
@@ -65,6 +69,7 @@ func GetSettingsBar(font font.Font, height float64) SettingsBar {
 	settingsBar.SaveButtonColor    = ColorParameter{saveButtonColor, saveButtonColor}
 	settingsBar.DeleteButtonColors = make([]ColorParameter, 0)
 	settingsBar.SettingsColors     = make([]ColorParameter, 0)
+	settingsBar.Hidden 			   = true
 	
 	settingsBar.height = height
 	settingsBar.font   = font
@@ -107,7 +112,10 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 	barPos := mgl32.Vec2{float32(settingsBar.PosX.Val), 0}
 	barSize := mgl32.Vec2{float32(settingsBarWidth), float32(settingsBar.height)}
 	
-	aspectRatio := float32(settingsBar.SettingsTextures[0].Width) / float32(settingsBar.SettingsTextures[1].Height)
+	aspectRatio := float32(1.0)
+	if len(settingsBar.SettingsTextures) > 0 {
+		aspectRatio = float32(settingsBar.SettingsTextures[0].Width) / float32(settingsBar.SettingsTextures[0].Height)
+	}
 	settingSizeX := barSize[0] - settingPadding * 2.0
 	settingSizeY := settingSizeX / aspectRatio
 	settingSize := mgl32.Vec2{settingSizeX, settingSizeY}
@@ -125,6 +133,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 	{
 		if isInRect(mousePos, barPos, barSize) {
 			settingsBar.PosX.Target = 0.0
+			settingsBar.Hidden = false
 			settingsBar.Color.Target = settingsBarColorHover
 			
 			scrollDelta := platform.GetMouseWheelDelta()
@@ -144,6 +153,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 				settingsBar.ContentY.Target = settingsBar.height - barContentHeight
 			}
 		} else {
+			settingsBar.Hidden = true
 			settingsBar.PosX.Target = settingsBarHiddenX
 			if hidden {
 				settingsBar.Color.Target = settingsBarColorInactive
@@ -151,7 +161,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 				settingsBar.Color.Target = settingsBarColor
 			}
 		}
-		DrawUIRect(barPos, barSize, settingsBar.Color.Val, 0)
+		DrawUIRect(barPos, barSize, settingsBar.Color.Val, layerBG)
 	}
 
 	// Input updates and drawing for save button.
@@ -164,11 +174,11 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 		} else {
 			settingsBar.SaveButtonColor.Target = saveButtonColor
 		}
-		DrawUIRect(savePos, saveSize, settingsBar.SaveButtonColor.Val, 0)
+		DrawUIRect(savePos, saveSize, settingsBar.SaveButtonColor.Val, layerBG)
 		
 		saveTextPos    := mgl32.Vec2{savePos[0] + saveSize[0]*0.5, savePos[1] + saveSize[1]*0.5}
 		saveTextOrigin := mgl32.Vec2{0.5, 0.5}
-		DrawUIText("SAVE", &settingsBar.font, saveTextPos, saveTextColor, saveTextOrigin, 1)
+		DrawUIText("SAVE", &settingsBar.font, saveTextPos, saveTextColor, saveTextOrigin, layerFG)
 	}
 
 	// Input updates and drawing for saved settings.
@@ -207,7 +217,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 				settingsBar.DeleteButtonColors[i].Target = settingsDeleteButtonColorInactive
 				settingsBar.SettingsColors[i].Target = settingsColor
 			}
-			DrawUIRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, 1)
+			DrawUIRect(deleteButtonPos, deleteButtonSize, deleteButtonColor, layerFG)
 	
 			deleteIconOffsetX := (deleteButtonSize[0] - deleteIconSize[0]) * 0.5
 			deleteIconOffsetY := (deleteButtonSize[1] - deleteIconSize[1]) * 0.5
@@ -215,7 +225,7 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 			DrawUIRectTextured(deleteIconPos, deleteIconSize, settingsBar.deleteIcon, mgl32.Vec4{1, 1, 1, deleteButtonColor[3]}, 1)
 	
 			texture := settingsBar.SettingsTextures[i]
-			DrawUIRectTextured(settingsPos, settingSize, texture, settingsBar.SettingsColors[i].Val, 0)
+			DrawUIRectTextured(settingsPos, settingSize, texture, settingsBar.SettingsColors[i].Val, layerBG)
 		}
 	}
 

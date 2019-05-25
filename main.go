@@ -114,7 +114,7 @@ func main() {
 	settings, settingsCount := app.LoadSettings()
 	
 	var windowWidth = 1600
-	var windowHeight = 800
+	var windowHeight = 900
 
 	var screenshotWidth = windowWidth * 2
 	var screenshotHeight = windowHeight * 2
@@ -275,10 +275,16 @@ func main() {
 
 		// UI
 		if showUI {
+			// In case settingsBar is expanded, we want to disable Advanced Settings UI.
+			if settingsBar.Hidden {
+				ui.SetInputResponsive(true)
+			} else {
+				ui.SetInputResponsive(false)
+			}
 			// SSAO related settings.
-			panel := ui.StartPanel("Rendering", mgl32.Vec2{100, 10}, 450)
-			cellCountFloat, _ := panel.AddSlider("CellCount", float64(settings.Cells.Count), 0, 10000)
-			settings.Cells.Count = int(cellCountFloat)
+			panelX := float32(50)
+			panelY := float32(0)
+			panel := ui.StartPanel("Rendering", mgl32.Vec2{panelX, panelY}, 450)
 			settings.Rendering.DirectLight, _ = panel.AddSlider("DirectLight", settings.Rendering.DirectLight, 0, 5.0)
 			settings.Rendering.AmbientLight, _ = panel.AddSlider("AmbientLight", settings.Rendering.AmbientLight, 0, 5.0)
 			settings.Rendering.MinWhite, _ = panel.AddSlider("MinWhite", settings.Rendering.MinWhite, 0, 20.0)
@@ -289,7 +295,7 @@ func main() {
 
 			// Colors/material related settings.
 			nextWidth := panel.GetWidth()
-			panel = ui.StartPanel("Material", mgl32.Vec2{100, panel.GetBottom()}, float64(nextWidth))
+			panel = ui.StartPanel("Material", mgl32.Vec2{panelX, panel.GetBottom()}, float64(nextWidth))
 			settings.Rendering.Roughness, _ = panel.AddSlider("Roughness", settings.Rendering.Roughness, 0, 1.0)
 			settings.Rendering.Reflectivity, _ = panel.AddSlider("Reflectivity", settings.Rendering.Reflectivity, 0, 1.0)
 			for i := range settings.Cells.Colors {
@@ -455,12 +461,22 @@ func main() {
 		
 		rectRenderingBuffer, textRenderingBuffer := ui.GetDrawData()
 		for _, rect := range rectRenderingBuffer {
-			app.DrawUIRect(rect.Position, rect.Size, rect.Color, 0)
+			// We're going to update the color's alpha so `ui` fades along with other
+			// UI elements. Note that we're normalizing helpColor's alpha with maximum
+			// alpha value - `uiColor[3]`.
+			color := rect.Color
+			color[3] *= helpColor.Val[3] / uiColor[3]
+			app.DrawUIRect(rect.Position, rect.Size, color, 0)
 		}
 		
 		for _, text := range textRenderingBuffer {
 			font := (*text.Font).(*font.Font)
-			app.DrawUIText(text.Text, font, text.Position, text.Color, text.Origin, 0)
+			// We're going to update the color's alpha so `ui` fades along with other
+			// UI elements. Note that we're normalizing helpColor's alpha with maximum
+			// alpha value - `uiColor[3]`.
+			color := text.Color
+			color[3] *= helpColor.Val[3] / uiColor[3]
+			app.DrawUIText(text.Text, font, text.Position, color, text.Origin, 0)
 		}
 		
 		app.RenderUI(screenBuffer)

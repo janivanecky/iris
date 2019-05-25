@@ -60,7 +60,7 @@ type texturedRectData struct {
 }
 
 // Slices for storing draw data.
-const noLayers = 2
+const noLayers = 4
 var rectEntities 		 [][]rectData
 var texturedRectEntities [][]texturedRectData
 var textEntities		 [][]textData

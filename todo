@@ -3,7 +3,6 @@ DOING
 =========================
 - README.md
 - Why is sometimes rendering settings random at start?
-- iris title somewhere
 
 - optimize so running 60fps on integrated card
 
@@ -43,6 +42,7 @@ NEEDS FIX
 DONE
 =========================
 25/05/19
+- add iris version
 - when few settings, the settings bar is aligned to bottom side
 
 24/05/19

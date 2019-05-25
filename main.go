@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	_ "image/png"
 	"io/ioutil"
@@ -25,6 +24,7 @@ const uiFadeOutTime    = 1.5
 var   uiColor 		   = mgl32.Vec4{0.0, 0.0, 0.0, 0.4}
 var   uiColorHover 	   = mgl32.Vec4{0.0, 0.0, 0.0, 0.8}
 var   uiColorInactive  = mgl32.Vec4{0.0, 0.0, 0.0, 0.01}
+var   textColor		   = mgl32.Vec4{0.0, 0.0, 0.0, 0.6}
 
 // Screenshot constants
 const screenshotTextDuration 	 = 1.75
@@ -188,8 +188,8 @@ func main() {
 	helpOffsetRight := float32(100.0)
 	helpOffsetTop := 10.0
 	helpAlpha := app.FloatParameter{1.0, 1.0}
-	helpColor := app.ColorParameter{uiColor, uiColor}
-
+	
+	generalTextColor := app.ColorParameter{textColor, textColor}
 	settingsBar := app.GetSettingsBar(infoFont, float64(windowHeight))
 
 	// Runtime variables
@@ -228,12 +228,6 @@ func main() {
 		dt := now.Sub(start).Seconds()
 		start = now
 		platform.Update(window)
-
-		// UI
-		fps := 0
-		if dt > 0.0 {
-			fps = int(1.0 / dt)
-		}
 
 		// CELLS
 		if platform.IsKeyPressed(platform.KeyR) {
@@ -308,9 +302,6 @@ func main() {
 			
 		}
 
-		fpsString := fmt.Sprintf("%d", fps)
-		app.DrawUIText(fpsString, &infoFont, mgl32.Vec2{float32(windowWidth) - 10, float32(windowHeight) - 10}, mgl32.Vec4{0, 0, 0, 0.8}, mgl32.Vec2{1, 1}, 0)
-
 		// Show screenshot text.
 		screenshotTextPart := math.Min(screenshotTextTimer/screenshotTextFadeDuration, 1.0)
 		alpha := math.Sqrt(screenshotTextPart)
@@ -332,9 +323,14 @@ func main() {
 		mouseX, mouseY := platform.GetMousePosition()
 		inactiveUIColor := uiColor
 		hideUI := timeSinceMouseMovement > uiFadeOutTime
+		generalTextColor.Target = textColor
 		if timeSinceMouseMovement > uiFadeOutTime {
 			inactiveUIColor = uiColorInactive
+			generalTextColor.Target = uiColorInactive
 		}
+		generalTextColor.Update(dt, 5.0)
+		app.DrawUIText("- iris v1.0 -", &infoFont, mgl32.Vec2{float32(windowWidth) - 15, float32(windowHeight) - 10}, generalTextColor.Val, mgl32.Vec2{1, 1}, 0)
+
 		action, index := settingsBar.Update(dt, float32(mouseX), float32(mouseY), hideUI)
 		switch action {
 		case app.SAVE:
@@ -418,26 +414,24 @@ func main() {
 
 		// Help update
 		helpAlpha.Update(dt, 5.0)
-		helpColor.Target = inactiveUIColor
-		helpColor.Update(dt, 5.0)
 		helpY := float32(helpOffsetTop);
 		helpX := float32(windowWidth) - helpOffsetRight
-		helpColorCurrent := helpColor.Val
-		helpColorCurrent[3] *= 1.5 * float32(helpAlpha.Val)
-		app.DrawUIText("show/hide help", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
-		app.DrawUIText("- F1", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		helpColor := generalTextColor.Val
+		helpColor[3] *= float32(helpAlpha.Val)
+		app.DrawUIText("show/hide help", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F1", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 		helpY += float32(infoFont.RowHeight)
-		app.DrawUIText("change color", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
-		app.DrawUIText("- C", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		app.DrawUIText("change color", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- C", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 		helpY += float32(infoFont.RowHeight)
-		app.DrawUIText("randomize cells", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
-		app.DrawUIText("- R", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		app.DrawUIText("randomize cells", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- R", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 		helpY += float32(infoFont.RowHeight)
-		app.DrawUIText("advanced settings", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
-		app.DrawUIText("- F2", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		app.DrawUIText("advanced settings", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F2", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 		helpY += float32(infoFont.RowHeight)
-		app.DrawUIText("screenshot", &infoFont, mgl32.Vec2{helpX, helpY}, helpColorCurrent, mgl32.Vec2{1, 0}, 0)
-		app.DrawUIText("- F10", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColorCurrent, mgl32.Vec2{0, 0}, 0)
+		app.DrawUIText("screenshot", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
+		app.DrawUIText("- F10", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 
 		drawCells(cells, settings.Cells, cube)
 		viewMatrix = camera.GetViewMatrix()
@@ -465,7 +459,7 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := rect.Color
-			color[3] *= helpColor.Val[3] / uiColor[3]
+			color[3] *= helpColor[3] / uiColor[3]
 			app.DrawUIRect(rect.Position, rect.Size, color, 0)
 		}
 		
@@ -475,7 +469,7 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := text.Color
-			color[3] *= helpColor.Val[3] / uiColor[3]
+			color[3] *= helpColor[3] / uiColor[3]
 			app.DrawUIText(text.Text, font, text.Position, color, text.Origin, 0)
 		}
 		

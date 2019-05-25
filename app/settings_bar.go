@@ -149,8 +149,10 @@ func (settingsBar *SettingsBar) Update(dt float64, mouseX, mouseY float32, hidde
 			settingsPartHeight := float64(settingsCount) * (float64(settingSizeY) + settingPadding)
 			barContentHeight := saveButtonPartHeight + settingsPartHeight 
 			barContentBottom := settingsBar.ContentY.Target + barContentHeight
-			if barContentBottom < settingsBar.height {
+			if barContentBottom < settingsBar.height && barContentHeight > settingsBar.height {
 				settingsBar.ContentY.Target = settingsBar.height - barContentHeight
+			} else if (barContentHeight < settingsBar.height) {
+				settingsBar.ContentY.Target = 0
 			}
 		} else {
 			settingsBar.Hidden = true

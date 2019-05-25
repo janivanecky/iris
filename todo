@@ -4,7 +4,6 @@ DOING
 - README.md
 - Why is sometimes rendering settings random at start?
 - iris title somewhere
-- when few settings, the settings bar is aligned to bottom side
 
 - optimize so running 60fps on integrated card
 
@@ -43,6 +42,9 @@ NEEDS FIX
 =========================
 DONE
 =========================
+25/05/19
+- when few settings, the settings bar is aligned to bottom side
+
 24/05/19
 - place advanced settings in a better position
 - fix settings bar aspect ratio computation when no settings saved

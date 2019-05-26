@@ -171,8 +171,8 @@ func main() {
 	}
 
 	// Circle controllers
-	innerCircleController := app.GetCircleController(settings.Cells.RadiusMin, 0)
-	outerCircleController := app.GetCircleController(settings.Cells.RadiusMax, 0)
+	innerCircleController := app.GetCircleController(radiusMinCellToCtrl(settings.Cells.RadiusMin), 0)
+	outerCircleController := app.GetCircleController(radiusMaxCellToCtrl(settings.Cells.RadiusMax), 0)
 
 	// COUNTS
 	// TODO: move to specific file

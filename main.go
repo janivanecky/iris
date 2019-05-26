@@ -119,7 +119,7 @@ func main() {
 	var screenshotWidth = windowWidth * 2
 	var screenshotHeight = windowHeight * 2
 	//windowWidth, windowHeight = platform.GetMonitorResolution()
-	window := platform.GetWindow(windowWidth, windowHeight, "New fancy window", false)
+	window := platform.GetWindow(windowWidth, windowHeight, "iris", false)
 	defer platform.ReleaseWindow()
 
 	// TODO: Maybe somehow encapsulate?

@@ -1,8 +1,6 @@
 =========================
 DOING
 =========================
-- README.md
-
 - optimize so running 60fps on integrated card
 
 =========================
@@ -41,6 +39,7 @@ NEEDS FIX
 DONE
 =========================
 25/05/19
+- README.md
 - fix radius min/max settings being loaded incorrectly
 - add iris version
 - when few settings, the settings bar is aligned to bottom side

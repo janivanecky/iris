@@ -400,6 +400,8 @@ func main() {
 			settings.Cells.Count = int(countSliderValue.Val)
 			if settings.Cells.Count > 10000 {
 				settings.Cells.Count = 10000
+			} else if settings.Cells.Count <= 0 {
+				settings.Cells.Count = 1
 			}
 			countSliderColor.Update(dt, 5.0)
 			countSliderValue.Update(dt, 15.0)

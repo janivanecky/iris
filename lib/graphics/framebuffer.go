@@ -83,13 +83,18 @@ func getFramebuffer(width, height int32) Framebuffer {
 
 // GetFramebuffer returns initialized Framebuffer object with multiple attachments.
 // attachment arguments is a map from attachment name to attachment format (e.g. gl.RGBA8).
-func GetFramebuffer(width, height int32, sampleCount int32, attachments map[string]int32, depthBuffer bool) Framebuffer {
+func GetFramebuffer(width, height int32, sampleCount int32, attachmentNames []string, attachmentFormats []int32, depthBuffer bool) Framebuffer {
 	// Get empty framebuffer.
 	framebuffer := getFramebuffer(width, height)
 	
 	// Add individual attachments.
 	attachmentIndex := int32(0)
-	for attachmentName, attachmentFormat := range attachments {
+	if len(attachmentNames) != len(attachmentFormats) {
+		panic("GetFramebuffer got different number of attachment names and their formats.")
+	}
+	for i := 0; i < len(attachmentNames); i++ {
+		attachmentName := attachmentNames[i]
+	    attachmentFormat := attachmentFormats[i]
 		framebuffer.addColorAttachment(attachmentName, sampleCount, attachmentFormat, attachmentIndex) 
 		attachmentIndex++
 	}

@@ -2,6 +2,8 @@
 DOING
 =========================
 - optimize so running 60fps on integrated card
+- ssao display mode
+- advanced settings only visible if help visible
 
 =========================
 TODO
@@ -23,6 +25,7 @@ MAINTENANCE
 - separate settings from displayed stuff - settings should have target, not interpolated values always!
 
 FEATURES
+- UI should show that new color is being loaded
 - better slider (needs a replacement)
 - UI for selecting colors (with pre-fetching)
 - screenshot in 4k
@@ -38,6 +41,11 @@ NEEDS FIX
 =========================
 DONE
 =========================
+27/05/19
+- render settings are random sometimes
+    - problem was that when specifying framebuffer attachments, we're setting their order in a dict which doesn't
+    guarantee preserving that order.
+
 25/05/19
 - README.md
 - fix radius min/max settings being loaded incorrectly

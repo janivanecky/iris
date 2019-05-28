@@ -89,34 +89,28 @@ func GetSceneView(windowWidth, windowHeight int32) SceneView {
 
 	sceneView.bufferLight = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {
-			"direct": gl.RGBA32F,
-			"ambient": gl.RGBA32F,
-		}, true)
+		[]string{"direct", "ambient"},
+		[]int32{gl.RGBA32F, gl.RGBA32F}, true)
 	sceneView.bufferLightMS = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 4,
-		map[string]int32 {
-			"direct": gl.RGBA32F,
-			"ambient": gl.RGBA32F,
-		}, true)
+		[]string{"direct", "ambient"},
+		[]int32 {gl.RGBA32F, gl.RGBA32F}, true)
 	sceneView.bufferGeometry = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {
-			"position": gl.RGBA32F,
-			"normal": gl.RGBA32F,
-		}, true)
+		[]string {"position", "normal"},
+		[]int32 {gl.RGBA32F, gl.RGBA32F}, true)
 	sceneView.bufferSSAO = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {"occlusion": gl.R32F}, false)
+		[]string{"occlusion"}, []int32{gl.R32F}, false)
 	sceneView.bufferBlur = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {"occlusion": gl.R32F}, false)
+		[]string{"occlusion"}, []int32{gl.R32F}, false)
 	sceneView.bufferShading = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {"color": gl.RGBA8}, false)
+		[]string{"color"}, []int32{gl.RGBA8}, false)
 	sceneView.bufferEffect = graphics.GetFramebuffer(
 		windowWidth, windowHeight, 1,
-		map[string]int32 {"color": gl.RGBA8}, false)
+		[]string{"color"}, []int32{gl.RGBA8}, false)
 	
 	return sceneView
 }

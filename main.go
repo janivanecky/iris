@@ -189,7 +189,7 @@ func main() {
 	helpOffsetTop := 10.0
 	helpAlpha := app.FloatParameter{1.0, 1.0}
 	
-	generalTextColor := app.ColorParameter{textColor, textColor}
+	uiAlpha := app.FloatParameter{1.0, 1.0}
 	settingsBar := app.GetSettingsBar(infoFont, float64(windowHeight))
 
 	// Runtime variables
@@ -323,13 +323,17 @@ func main() {
 		mouseX, mouseY := platform.GetMousePosition()
 		inactiveUIColor := uiColor
 		hideUI := timeSinceMouseMovement > uiFadeOutTime
-		generalTextColor.Target = textColor
+		uiAlpha.Target = 1.0
 		if timeSinceMouseMovement > uiFadeOutTime {
 			inactiveUIColor = uiColorInactive
-			generalTextColor.Target = uiColorInactive
+			uiAlpha.Target = 0.0
 		}
-		generalTextColor.Update(dt, 5.0)
-		app.DrawUIText("- iris v1.0 -", &infoFont, mgl32.Vec2{float32(windowWidth) - 15, float32(windowHeight) - 10}, generalTextColor.Val, mgl32.Vec2{1, 1}, 0)
+		uiAlpha.Update(dt, 5.0)
+
+		// Draw iris version text at the bottom right corner of the screen.
+		irisColor := textColor
+		irisColor[3] *= float32(uiAlpha.Val)
+		app.DrawUIText("- iris v1.0 -", &infoFont, mgl32.Vec2{float32(windowWidth) - 15, float32(windowHeight) - 10}, irisColor, mgl32.Vec2{1, 1}, 0)
 
 		action, index := settingsBar.Update(dt, float32(mouseX), float32(mouseY), hideUI)
 		switch action {
@@ -418,8 +422,8 @@ func main() {
 		helpAlpha.Update(dt, 5.0)
 		helpY := float32(helpOffsetTop);
 		helpX := float32(windowWidth) - helpOffsetRight
-		helpColor := generalTextColor.Val
-		helpColor[3] *= float32(helpAlpha.Val)
+		helpColor := textColor
+		helpColor[3] *= float32(helpAlpha.Val) * float32(uiAlpha.Val)
 		app.DrawUIText("show/hide help", &infoFont, mgl32.Vec2{helpX, helpY}, helpColor, mgl32.Vec2{1, 0}, 0)
 		app.DrawUIText("- F1", &infoFont, mgl32.Vec2{helpX + 10, helpY}, helpColor, mgl32.Vec2{0, 0}, 0)
 		helpY += float32(infoFont.RowHeight)
@@ -440,7 +444,6 @@ func main() {
 		camera.Update(dt)
 		app.RenderScene(screenBuffer, sceneView, viewMatrix, projectionMatrix, &settings.Rendering)
 		
-
 		// SCREENSHOTS
 		if platform.IsKeyPressed(platform.KeyF10) {
 			screenshotTextTimer = screenshotTextDuration
@@ -461,7 +464,7 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := rect.Color
-			color[3] *= helpColor[3] / uiColor[3]
+			color[3] *= float32(uiAlpha.Val)
 			app.DrawUIRect(rect.Position, rect.Size, color, 0)
 		}
 		
@@ -471,7 +474,7 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := text.Color
-			color[3] *= helpColor[3] / uiColor[3]
+			color[3] *= float32(uiAlpha.Val)
 			app.DrawUIText(text.Text, font, text.Position, color, text.Origin, 0)
 		}
 		

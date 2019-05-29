@@ -2,8 +2,7 @@
 DOING
 =========================
 - optimize so running 60fps on integrated card
-- ssao display mode
-- advanced settings only visible if help visible
+- advanced settings shouldn't disappear if mouse is over them?
 
 =========================
 TODO
@@ -41,6 +40,9 @@ NEEDS FIX
 =========================
 DONE
 =========================
+28/05/19
+- solve advanced settings only visible if help is visible
+
 27/05/19
 - render settings are random sometimes
     - problem was that when specifying framebuffer attachments, we're setting their order in a dict which doesn't

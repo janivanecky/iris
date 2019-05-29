@@ -268,6 +268,8 @@ func main() {
 		}
 
 		// UI
+		mouseX, mouseY := platform.GetMousePosition()
+		isMouseOverAdvancedSettings := false
 		if showUI {
 			// In case settingsBar is expanded, we want to disable Advanced Settings UI.
 			if settingsBar.Hidden {
@@ -287,6 +289,11 @@ func main() {
 			settings.Rendering.SSAOBoundary, _ = panel.AddSlider("SSAOBoundary", settings.Rendering.SSAOBoundary, 0, 10.0)
 			panel.End()
 
+			panelRect := panel.GetBoundingRect()
+			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, mgl32.Vec2{panelRect[0], panelRect[1]}, mgl32.Vec2{panelRect[2], panelRect[3]}) {
+				isMouseOverAdvancedSettings = true
+			}
+
 			// Colors/material related settings.
 			nextWidth := panel.GetWidth()
 			panel = ui.StartPanel("Material", mgl32.Vec2{panelX, panel.GetBottom()}, float64(nextWidth))
@@ -300,6 +307,10 @@ func main() {
 			}
 			panel.End()
 			
+			panelRect = panel.GetBoundingRect()
+			if isInRect(mgl32.Vec2{float32(mouseX), float32(mouseY)}, mgl32.Vec2{panelRect[0], panelRect[1]}, mgl32.Vec2{panelRect[2], panelRect[3]}) {
+				isMouseOverAdvancedSettings = true
+			}
 		}
 
 		// Show screenshot text.
@@ -320,7 +331,6 @@ func main() {
 			timeSinceMouseMovement = 0.0
 		}
 
-		mouseX, mouseY := platform.GetMousePosition()
 		inactiveUIColor := uiColor
 		hideUI := timeSinceMouseMovement > uiFadeOutTime
 		uiAlpha.Target = 1.0
@@ -464,7 +474,9 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := rect.Color
-			color[3] *= float32(uiAlpha.Val)
+			if !isMouseOverAdvancedSettings {
+				color[3] *= float32(uiAlpha.Val)
+			}
 			app.DrawUIRect(rect.Position, rect.Size, color, 0)
 		}
 		
@@ -474,7 +486,9 @@ func main() {
 			// UI elements. Note that we're normalizing helpColor's alpha with maximum
 			// alpha value - `uiColor[3]`.
 			color := text.Color
-			color[3] *= float32(uiAlpha.Val)
+			if !isMouseOverAdvancedSettings {
+				color[3] *= float32(uiAlpha.Val)
+			}
 			app.DrawUIText(text.Text, font, text.Position, color, text.Origin, 0)
 		}
 		

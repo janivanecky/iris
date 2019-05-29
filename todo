@@ -2,7 +2,6 @@
 DOING
 =========================
 - optimize so running 60fps on integrated card
-- advanced settings shouldn't disappear if mouse is over them?
 
 =========================
 TODO
@@ -42,6 +41,7 @@ DONE
 =========================
 28/05/19
 - solve advanced settings only visible if help is visible
+- advanced settings don't disappear if mouse is over them
 
 27/05/19
 - render settings are random sometimes

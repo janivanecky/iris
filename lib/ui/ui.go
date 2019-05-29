@@ -846,6 +846,10 @@ func (panel *Panel) End() {
     //})
 }
 
+func (panel *Panel) GetBoundingRect() mgl32.Vec4 {
+    return mgl32.Vec4{panel.position[0], panel.position[1], panel.GetWidth(), panel.GetBottom() - panel.position[1]}
+}
+
 func GetDrawData() ([]rectRenderingData, []textRenderingData){
     sort.Slice(rectRenderingBuffer, func(i, j int) bool {
         return rectRenderingBuffer[i].Layer < rectRenderingBuffer[j].Layer

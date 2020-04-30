@@ -376,7 +376,9 @@ func main() {
 		pos := rS.Add(rD.Mul(s))
 
 		{
-			innerCircleController.Update(dt, float64(pos.X()), float64(pos.Z()), 3.0, outerCircleController.Radius.Target - 5.0, hideUI)
+			innerCircleController.Update(
+				dt, float64(pos.X()), float64(pos.Z()), 3.0, outerCircleController.Radius.Target - 5.0, hideUI, !ui.IsRegisteringInput && action == app.NONE,
+			)
 
 			circleVertices, circleIndices := innerCircleController.GetMeshData()
 			circleInner := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})
@@ -384,7 +386,9 @@ func main() {
 		}
 		
 		{
-			outerCircleController.Update(dt, float64(pos.X()), float64(pos.Z()), innerCircleController.Radius.Target + 5.0, 1000.0, hideUI)
+			outerCircleController.Update(
+				dt, float64(pos.X()), float64(pos.Z()), innerCircleController.Radius.Target + 5.0, 1000.0, hideUI, !ui.IsRegisteringInput && action == app.NONE,
+			)
 			
 			circleVertices, circleIndices := outerCircleController.GetMeshData()
 			circleOuter := graphics.GetMesh(circleVertices, circleIndices, []int{4, 4})

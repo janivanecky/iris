@@ -43,7 +43,7 @@ func GetCircleController(radius, angle float64) CircleController {
 }
 
 // Update handles input and smooth changes in controller's state.
-func (controller *CircleController) Update(dt float64, mouseXWorld, mouseZWorld float64, minRadius, maxRadius float64, hidden bool) {
+func (controller *CircleController) Update(dt float64, mouseXWorld, mouseZWorld float64, minRadius, maxRadius float64, hidden bool, inputActive bool) {
 	// Get mouse position in polar coordinates in XZ plane.
 	// We need it to check if mouse is positioned over controller.
 	mouseAngle := math.Atan2(mouseXWorld, mouseZWorld)
@@ -52,10 +52,10 @@ func (controller *CircleController) Update(dt float64, mouseXWorld, mouseZWorld 
 
 	// Update hot/active status of the controller.
 	controller.hot = hover
-	if controller.active && !platform.IsMouseLeftButtonDown() {
+	if controller.active && !platform.IsMouseLeftButtonDown() && inputActive {
 		controller.active = false
 	}
-	if controller.hot && platform.IsMouseLeftButtonPressed() {
+	if controller.hot && platform.IsMouseLeftButtonPressed() && inputActive {
 		controller.active = true
 	}
 

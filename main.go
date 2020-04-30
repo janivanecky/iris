@@ -302,7 +302,7 @@ func main() {
 			for i := range settings.Cells.Colors {
 				pickerStates[i], _ = panel.AddColorPalette("Color"+strconv.Itoa(i), settings.Cells.Colors[i], pickerStates[i])
 				if pickerStates[i] {
-					settings.Cells.Colors[i], _ = panel.AddColorPicker("Pick"+strconv.Itoa(i), settings.Cells.Colors[i], false)
+					colorsParams[i].Target, _ = panel.AddColorPicker("Pick"+strconv.Itoa(i), colorsParams[i].Target, false)
 				}
 			}
 			panel.End()
